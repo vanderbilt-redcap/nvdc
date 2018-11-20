@@ -12,8 +12,11 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		// $info = "Project vars:\n". print_r(get_object_vars($project), true) . "\nProject methods:\n"  . print_r(get_class_methods($project), true);
 		
 		// $html = file_get_contents("html" . DIRECTORY_SEPARATOR . "print.html");
-		// $html = str_replace("CONTENT", $info, $html);
-		// echo $html;
-		echo "test";
+		$html = "<div class='container'><p>Test</p></div>";
+		// $html = str_replace("{CONTENT}", $info, $html);
+		
+		return $html;
+		
+		// return $html;
 	}
 }
