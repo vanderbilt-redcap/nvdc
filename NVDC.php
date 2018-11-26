@@ -16,7 +16,5 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		// $html = str_replace("{CONTENT}", $info, $html);
 		
 		return $html;
-		
-		// return $html;
 	}
 }
