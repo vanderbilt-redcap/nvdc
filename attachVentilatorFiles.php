@@ -1,3 +1,6 @@
 <?php
-$module->test();
-echo "\nTriggered from " . __FILE__ . ".";
+if (empty($_FILES)) {
+	echo $module->printUploadForm();
+} else {
+	echo $module->handleZip();
+}
