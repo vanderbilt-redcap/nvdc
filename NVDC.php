@@ -55,31 +55,34 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	}
 	
 	public function handleZip() {
-		echo "<pre>";
+		$returnInfo = [];
+		$returnInfo['zipError'] = "";
+		$returnInfo['fileStatuses'] = [];
 		# find the uploaded zip archive in $_FILES and upload mrn folder > alarm/log/trends files to appropriate record
-		$zip_size = 0;
 		if (isset($_FILES['zip'])) {
 			$zip_size = $_FILES['zip']['size'];
-			if (($zip_size/1024/1024) > maxUploadSizeEdoc()) {
-				unlink($_FILES['zip']);
-				return "ERROR: REDCap cannot upload your .zip file. The chosen file is " . round(($zip_size/1024/1024)) . "MB in size. The maximum file size for uploads is " . round(maxUploadSizeEdoc()) . "MB.";
+			if ($zip_size > 2*1024*1024*1024) {		# is zip file bigger than 2 GB?
+				unlink($_FILES['zip']['tmp_name']);
+				$returnInfo['zipError'] = "ERROR: REDCap cannot upload the ventilator data files because the zip file is " . $zip_size/1024/1024/1024 . " GB which exceeds the 2 GB limit.";
+				return $returnInfo;
 			}
 			if ($_FILES['myfile']['error'] != UPLOAD_ERR_OK) {
-				return "ERROR: There was an error uploading your .zip file, please try again.";
+				$returnInfo['zipError'] = "ERROR: There was an error uploading your zip file, please try again.";
+				return $returnInfo;
 			}
-		} else {
-			return "ERROR: no files uploaded";
 		}
 		
 		# $uploaded[] first level is mrn => array, second level is 'alarm/log/trends' => filename
 		$uploaded = [];
-		$fileInfo = current($_FILES);
+		$zipInfo = $_FILES['zip'];
 		$zip = new \ZipArchive();
-		$zip->open($fileInfo['tmp_name']);
+		$zip->open($zipInfo['tmp_name']);
 		if ($zip === true) {
-			return "ERROR: REDCap couldn't open the chosen zip archive";
+			$returnInfo['zipError'] = "ERROR: REDCap couldn't open the uploaded zip file. Please try to re-archive the ventilator files and upload again.";
+			return $returnInfo;
 		}
 		for ($i = 0; $i < $zip->numFiles; $i++) {
+			$fileInfo = $zip->statIndex($i);
 			preg_match_all("/^(\d+)\/(.+\.csv|.+\.txt)/", $zip->getNameIndex($i), $matches);
 			$mrn = $matches[1][0];
 			$filename = $matches[2][0];
@@ -101,31 +104,50 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		}
 		
 		# look for appropriate records per mrn
-		$pid = $this->getProjectId();							# 8-digit, mm/dd/yyyy, id, id, id
-		$mrn = key($uploaded);
-		$recordsInfo = \REDCap::getData($pid, 'array', NULL, array('mrn', 'date_vent', 'alarm_file', 'log_file', 'trends_file'), NULL, NULL, NULL, NULL, NULL, "[mrn]='$mrn'");
-		
-		# upload files to the oldest record that has no files attached
-		$targetRid = false;
-		$oldestDate = new \DateTime("01/01/0000");
-		foreach ($recordsInfo as $rid => $entry) {
-			$record = current($entry);
-			$date_vent = new \DateTime($record['date_vent']);
-			if ($date_vent->getTimestamp() > $oldestDate->getTimestamp() && !$record['alarm_file'] && !$record['log_file'] && !$record['trends_file']) {
-				$oldestDate = $date_vent;
-				$targetRid = $rid;
+		$pid = $this->getProjectId();
+		foreach($uploaded as $mrn => $files) {
+			$recordsInfo = \REDCap::getData($pid, 'array', NULL, array('mrn', 'date_vent', 'alarm_file', 'log_file', 'trends_file'), NULL, NULL, NULL, NULL, NULL, "[mrn]='$mrn'");
+			$eid = key(current(current($recordsInfo)));
+			# upload files to the oldest record that has no files attached
+			$targetRid = 0;
+			$oldestDate = new \DateTime("01/01/0000");
+			foreach ($recordsInfo as $rid => $entry) {
+				$record = current($entry);
+				$date_vent = new \DateTime($record['date_vent']);
+				if ($date_vent->getTimestamp() > $oldestDate->getTimestamp() && !$record['alarm_file'] && !$record['log_file'] && !$record['trends_file']) {
+					$oldestDate = $date_vent;
+					$targetRid = $rid;
+				}
+			}
+			if ($targetRid === 0) {
+				return "ERROR: unable to find a record for MRN $mrn that doesn't have files already attached.";
+			}
+			
+			# have target record id, so let's upload files
+			foreach ($files as $filetype => $filename) {
+				# a little confusing, but we have to save file to disk FROM the zip so we can Files::uploadFile
+				$fileContents = $zip->getFromName($mrn . "/" . $uploaded[$mrn]['alarm_file']);
+				$tmpFilename = APP_PATH_TEMP . "tmp_vent_file" . substr($uploaded[$mrn]['alarm_file'], -4);
+				file_put_contents($tmpFilename, $fileContents);
+				$tmpFileInfo = array(
+					"name" => $uploaded[$mrn]['alarm_file'],
+					"tmp_name" => $tmpFilename,
+					"size" => filesize($tmpFilename)
+				);
+				$edocID = \Files::uploadFile($tmpFileInfo, $pid);
+				$query = "INSERT INTO redcap_data (project_id, event_id, record, field_name, value, instance) 
+						  VALUES ($pid, $eid, '$targetRid', 'alarm_file', '$edocID', 'null')";
+				db_query($query);
+				if (db_affected_rows($query) == 0) {
+					return "oops error";
+				} else {
+					return "success!!!";
+				}
 			}
 		}
-		
-		if (!$targetRid) {
-			return "ERROR: unable to find a record for MRN $mrn that doesn't have files already attached.";
-		}
-		
-		echo (string) ($zip->getFromName($mrn . "/" . $uploaded[$mrn]['alarm_file']));
-		// echo $uploaded[$mrn]['alarm_file'];
-		// print_r($uploaded);
-		
-		echo "</pre>";
+		$zip->close();
+		unlink($_FILES['zip']['tmp_name']);
+		return $returnInfo;
 	}
 	
 	public function printMRNForm() {
