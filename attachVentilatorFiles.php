@@ -2,5 +2,6 @@
 if (empty($_FILES)) {
 	echo $module->printUploadForm();
 } else {
-	echo $module->handleZip();
+	$statuses = $module->handleZip();
+	print_r($statuses);
 }

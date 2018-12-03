@@ -8,12 +8,12 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	}
 	
 	public function downloadFiles($mrnList = ['all' => true]) {
-		# downloadFiles will send the user a .zip of all the alarm, log, and trends file for their NICU Ventilator Data project
-		# optionally, supply a $mrnList to filter to only those MRNs
-		$pid = $this->getProjectId();
+		// # downloadFiles will send the user a .zip of all the alarm, log, and trends file for their NICU Ventilator Data project
+		// # optionally, supply a $mrnList to filter to only those MRNs
+		$pid = $this->getProjectSettings()['system-project']['value'];
 		$edocInfo = \REDCap::getData($pid, 'array', NULL, array('mrn', 'alarm_file', 'log_file', 'trends_file'));
 		
-		# get array of ids to help us build sql string query
+		// # get array of ids to help us build sql string query
 		$edocIDs = [];
 		foreach ($edocInfo as $recordId => $record) {
 			$arr = current($record);	# we use current instead of having to determine the event ID
@@ -30,14 +30,15 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			}
 		}
 		
-		# create zip file, open it
+		// # create zip file, open it
 		$zip = new \ZipArchive();
 		$fullpath = tempnam(EDOC_PATH,"");
 		$zip->open($fullpath, \ZipArchive::CREATE);
 		
-		# query redcap_edocs_metadata to get file names/paths to add to zip
+		// # query redcap_edocs_metadata to get file names/paths to add to zip
 		$sql = "SELECT * FROM redcap_edocs_metadata WHERE project_id=$pid and doc_id in (" . implode(", ", $edocIDs) . ")";
 		$query = db_query($sql);
+		
 		while($row = db_fetch_assoc($query)) {
 			$edoc = file_get_contents(EDOC_PATH . $row['stored_name']);
 			if ($edoc) {
@@ -45,7 +46,18 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			}
 		}
 		
-		# close and send!
+		// # if empty zip, say no files found
+		if ($zip->numFiles == 0) {
+			if ($mrnList['all']) {
+				echo "<pre>The NVDC module couldn't find any alarm, logbook, or trends files attached to records in this project.</pre>";
+				exit;
+			} else {
+				echo "<pre>The NVDC module couldn't find any alarm, logbook, or trends files attached to records in this project for the specified MRNs.</pre>";
+				exit;
+			}
+		}
+		
+		// # close and send!
 		$zip->close();
 		$zipFileName = "NICU_Ventilator_Data_Files.zip";
 		header("Content-disposition: attachment; filename=$zipFileName");
@@ -104,7 +116,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		}
 		
 		# look for appropriate records per mrn
-		$pid = $this->getProjectId();
+		$pid = $this->getProjectSettings()['system-project']['value'];
 		foreach($uploaded as $mrn => $files) {
 			$recordsInfo = \REDCap::getData($pid, 'array', NULL, array('mrn', 'date_vent', 'alarm_file', 'log_file', 'trends_file'), NULL, NULL, NULL, NULL, NULL, "[mrn]='$mrn'");
 			$eid = key(current(current($recordsInfo)));
@@ -120,28 +132,30 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 				}
 			}
 			if ($targetRid === 0) {
-				return "ERROR: unable to find a record for MRN $mrn that doesn't have files already attached.";
-			}
-			
-			# have target record id, so let's upload files
-			foreach ($files as $filetype => $filename) {
-				# a little confusing, but we have to save file to disk FROM the zip so we can Files::uploadFile
-				$fileContents = $zip->getFromName($mrn . "/" . $uploaded[$mrn]['alarm_file']);
-				$tmpFilename = APP_PATH_TEMP . "tmp_vent_file" . substr($uploaded[$mrn]['alarm_file'], -4);
-				file_put_contents($tmpFilename, $fileContents);
-				$tmpFileInfo = array(
-					"name" => $uploaded[$mrn]['alarm_file'],
-					"tmp_name" => $tmpFilename,
-					"size" => filesize($tmpFilename)
-				);
-				$edocID = \Files::uploadFile($tmpFileInfo, $pid);
-				$query = "INSERT INTO redcap_data (project_id, event_id, record, field_name, value, instance) 
-						  VALUES ($pid, $eid, '$targetRid', 'alarm_file', '$edocID', 'null')";
-				db_query($query);
-				if (db_affected_rows($query) == 0) {
-					return "oops error";
-				} else {
-					return "success!!!";
+				foreach (array('alarm_file', 'log_file', 'trends_file') as $filetype) {
+					$uploaded[$mrn][$filetype]['status'] = "File not uploaded because the NVDC module couldn't find a record for this MRN that didn't already have files attached.";
+				}
+			} else {
+				# have target record id, so let's upload files
+				foreach ($files as $filetype => $filename) {
+					# a little confusing, but we have to save file to disk FROM the zip so we can Files::uploadFile
+					$fileContents = $zip->getFromName($mrn . "/" . $uploaded[$mrn]['alarm_file']);
+					$tmpFilename = APP_PATH_TEMP . "tmp_vent_file" . substr($uploaded[$mrn]['alarm_file'], -4);
+					file_put_contents($tmpFilename, $fileContents);
+					$tmpFileInfo = array(
+						"name" => $uploaded[$mrn]['alarm_file'],
+						"tmp_name" => $tmpFilename,
+						"size" => filesize($tmpFilename)
+					);
+					$edocID = \Files::uploadFile($tmpFileInfo, $pid);
+					$query = "INSERT INTO redcap_data (project_id, event_id, record, field_name, value, instance) 
+							  VALUES ($pid, $eid, '$targetRid', 'alarm_file', '$edocID', 'null')";
+					db_query($query);
+					if (db_affected_rows($query) == 0) {
+						$uploaded[$mrn][$filetype]['status'] = "Record with empty file fields found for this file, but error occured in attaching file. Please try again.";
+					} else {
+						$uploaded[$mrn][$filetype]['status'] = "File successfully attached to record ID: " . $targetRid;
+					}
 				}
 			}
 		}
@@ -169,14 +183,15 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	
 	public function printUploadForm() {
 		$html = file_get_contents($this->getUrl("html" . DIRECTORY_SEPARATOR . "base.html"));
-		$html = str_replace("{STYLESHEET}", $this->getUrl("css" . DIRECTORY_SEPARATOR . "stylesheet.css"), $html);
+		$html = str_replace("STYLESHEET_FILEPATH", $this->getUrl("css" . DIRECTORY_SEPARATOR . "stylesheet.css"), $html);
+		$html = str_replace("JS_FILEPATH", $this->getUrl("js" . DIRECTORY_SEPARATOR . "nvdc.js"), $html);
 		$html = str_replace("{TITLE}", "Attach Ventilator Files", $html);
 		$body = "<div class='container'>
-			<p>Select a .zip archive of ventilator files to upload.</p>
+			<p>Select a zip archive of ventilator files to upload.</p>
 			<form enctype='multipart/form-data' method='post'>
 				<div class='custom-file'>
 					<input type='file' name='zip' class='custom-file-input' id='zip'>
-					<label class='custom-file-label' for='zip'>Choose .zip</label>
+					<label class='custom-file-label' for='zip'>Choose zip file</label>
 				</div>
 				<button type='submit'>Upload</button>
 			</form>
