@@ -1,8 +1,13 @@
 <?php
 if (empty($_FILES)) {
-	// echo $module->printUploadForm();
-	echo $module->test();
+	echo $module->printUploadForm();
 } else {
 	$statuses = $module->handleZip();
-	$module->printUploadReport($statuses);
+	echo $module->printUploadReport($statuses);
+	
+	// // diagnostics
+	// echo "<pre>";
+	// print_r($statuses);
+	// echo "</pre>";
+	// exit;
 }

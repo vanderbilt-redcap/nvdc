@@ -11,13 +11,20 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		// # downloadFiles will send the user a .zip of all the alarm, log, and trends file for their NICU Ventilator Data project
 		// # optionally, supply a $mrnList to filter to only those MRNs
 		$pid = $this->getProjectSettings()['system-project']['value'];
-		$edocInfo = \REDCap::getData($pid, 'array', NULL, array('mrn', 'alarm_file', 'log_file', 'trends_file'));
+		$filterLogic = "isnumber([alarm_file]) or isnumber([log_file]) or isnumber([trends_file])";
+		$edocInfo = \REDCap::getData($pid, 'array', NULL, array('mrn', 'alarm_file', 'log_file', 'trends_file'), NULL, NULL, NULL, NULL, NULL, $filterLogic);
+		
+		// // diagnostics
+		// echo "<pre>";
+		// print_r($edocInfo);
+		// echo "</pre>";
+		// exit;
 		
 		// # get array of ids to help us build sql string query
 		$edocIDs = [];
 		foreach ($edocInfo as $recordId => $record) {
 			$arr = current($record);	# we use current instead of having to determine the event ID
-			if ($mrnList['all'] || in_array($arr['mrn'], $mrnList)) {
+			if ($mrnList['all'] or in_array((string) $arr['mrn'], $mrnList)) {
 				if ($arr['alarm_file']) {
 					$edocIDs[] = $arr['alarm_file'];
 				}
@@ -52,7 +59,16 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 				echo "<pre>The NVDC module couldn't find any alarm, logbook, or trends files attached to records in this project.</pre>";
 				exit;
 			} else {
-				echo "<pre>The NVDC module couldn't find any alarm, logbook, or trends files attached to records in this project for the specified MRNs.</pre>";
+				echo "<pre>";
+				echo "The NVDC module couldn't find any alarm, logbook, or trends files attached to records in this project for the specified MRNs:\n";
+				foreach ($mrnList as $key => $mrn) {
+					if (!$key=='all') {
+						echo "$mrn\n";
+					}
+				}
+				echo "</pre>";
+				$zip->close();
+				unlink($fullpath);
 				exit;
 			}
 		}
@@ -74,7 +90,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			$zip_size = $_FILES['zip']['size'];
 			if ($zip_size > 2*1024*1024*1024) {		# is zip file bigger than 2 GB?
 				unlink($_FILES['zip']['tmp_name']);
-				$returnInfo['zipError'] = "ERROR: REDCap cannot upload the ventilator data files because the zip file is " . $zip_size/1024/1024/1024 . " GB which exceeds the 2 GB limit.";
+				$returnInfo['zipError'] = "ERROR: REDCap cannot upload the ventilator data files because the zip file is " . round($zip_size/1024/1024/1024, 3) . " GB which exceeds the 2 GB limit.";
 				return $returnInfo;
 			}
 			if ($_FILES['myfile']['error'] != UPLOAD_ERR_OK) {
@@ -94,26 +110,55 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		}
 		for ($i = 0; $i < $zip->numFiles; $i++) {
 			$fileInfo = $zip->statIndex($i);
-			preg_match_all("/^(\d+)\/(.+\.csv|.+\.txt)/", $zip->getNameIndex($i), $matches);
+			preg_match_all("/(\d+)\/(.+\.csv|.+\.txt)/", $zip->getNameIndex($i), $matches);
 			$mrn = $matches[1][0];
 			$filename = $matches[2][0];
 			preg_match_all("/^(\w+)/", $filename, $matches);
-			$filetype = $matches[1][0];		# should either be "Alarm", "Logbook", or "Trends"
+			# $filetype should ideally be "Alarm", "Logbook", or "Trends"
+			$filetype = $matches[1][0];
+			if (!$mrn or !$filename or !$filetype) continue;
 			
-			if ($filetype == "Alarm") {
+			// // diagnostics
+			// echo "fileInfo: " . print_r($fileInfo, true) . "\n";
+			// echo "mrn: $mrn\n";
+			// echo "filename: $filename\n";
+			// echo "filetype: $filetype\n\n";
+			
+			# add filenames for recognized files, add filename and status for unrecognized files
+			if (!in_array($filetype, array("Alarm", "Logbook", "Trends"))) {
+				// echo "filetype not recognized: $filetype\n";
 				if (!isset($uploaded[$mrn])) $uploaded[$mrn] = [];
-				$uploaded[$mrn]["alarm_file"] = array();
-				$uploaded[$mrn]["alarm_file"]['filename'] = $filename;
-			}
-			if ($filetype == "Logbook") {
-				if (!isset($uploaded[$mrn])) $uploaded[$mrn] = [];
-				$uploaded[$mrn]["log_file"] = array();
-				$uploaded[$mrn]["log_file"]['filename'] = $filename;
-			}
-			if ($filetype == "Trends") {
-				if (!isset($uploaded[$mrn])) $uploaded[$mrn] = [];
-				$uploaded[$mrn]["trends_file"] = array();
-				$uploaded[$mrn]["trends_file"]['filename'] = $filename;
+				$name = "";
+				$j = 1;
+				while ($name === "") {
+					$guess = "unrecognized_$j";
+					if (!isset($uploaded[$mrn][$guess])) {
+						$name = $guess;
+					}
+					$j++;
+				}
+				$uploaded[$mrn][$name] = array();
+				$uploaded[$mrn][$name]['filename'] = $filename;
+				$uploaded[$mrn][$name]['status'] = "The NVDC module was unable to recognize this file. The first word of an uploaded file should be 'Alarm', 'Logbook', or 'Trends'.";
+			} else {
+				if ($filetype == "Alarm") {
+					if (!isset($uploaded[$mrn])) $uploaded[$mrn] = [];
+					$uploaded[$mrn]["alarm_file"] = array();
+					$uploaded[$mrn]["alarm_file"]['filename'] = $filename;
+					$uploaded[$mrn]["alarm_file"]['zip_index'] = $i;
+				}
+				if ($filetype == "Logbook") {
+					if (!isset($uploaded[$mrn])) $uploaded[$mrn] = [];
+					$uploaded[$mrn]["log_file"] = array();
+					$uploaded[$mrn]["log_file"]['filename'] = $filename;
+					$uploaded[$mrn]["log_file"]['zip_index'] = $i;
+				}
+				if ($filetype == "Trends") {
+					if (!isset($uploaded[$mrn])) $uploaded[$mrn] = [];
+					$uploaded[$mrn]["trends_file"] = array();
+					$uploaded[$mrn]["trends_file"]['filename'] = $filename;
+					$uploaded[$mrn]["trends_file"]['zip_index'] = $i;
+				}
 			}
 		}
 		
@@ -122,7 +167,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		$eid = $this->getFirstEventId();
 		foreach($uploaded as $mrn => $files) {
 			$recordsInfo = \REDCap::getData($pid, 'array', NULL, array('mrn', 'date_vent', 'alarm_file', 'log_file', 'trends_file'), NULL, NULL, NULL, NULL, NULL, "[mrn]='$mrn'");
-			$uploaded[$mrn]['existingRecords'] = $recordsInfo;
+			
+			// // for diagnostics/testing:
+			// $uploaded[$mrn]['existingRecords'] = $recordsInfo;
 			
 			# upload files to the oldest record that has no files attached
 			$targetRid = 0;
@@ -136,17 +183,25 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 					$targetRid = $rid;
 				}
 			}
-			$uploaded[$mrn]['targetRid'] = $targetRid;
+			// // for diagnostics/testing:
+			// $uploaded[$mrn]['targetRid'] = $targetRid;
 			
 			if ($targetRid === 0) {
-				foreach (array('alarm_file', 'log_file', 'trends_file') as $filetype) {
-					$uploaded[$mrn][$filetype]['status'] = "File not uploaded because the NVDC module couldn't find a record for this MRN that didn't already have files attached.";
+				foreach ($uploaded[$mrn] as $filetype => $info) {
+					if (!isset($info['status'])) {
+						$uploaded[$mrn][$filetype]['status'] = "File not uploaded because the NVDC module couldn't find a record for this MRN that didn't already have files attached.";
+					}
 				}
 			} else {
 				# have target record id, so let's upload files
 				foreach ($files as $filetype => $info) {
+					# skip if status already set
+					if (isset($info['status'])) {
+						continue;
+					}
 					# a little confusing, but we have to save file to disk FROM the zip so we can Files::uploadFile
-					$fileContents = $zip->getFromName($mrn . "/" . $info['filename']);
+					$path = $mrn . "/" . $info['filename'];
+					$fileContents = $zip->getFromIndex($info['zip_index']);
 					$tmpFilename = APP_PATH_TEMP . "tmp_vent_file" . substr($info['filename'], -4);
 					file_put_contents($tmpFilename, $fileContents);
 					$tmpFileInfo = array(
@@ -155,8 +210,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 						"size" => filesize($tmpFilename)
 					);
 					$edocID = \Files::uploadFile($tmpFileInfo, $pid);
-					$docHash = \Files::docIdHash($edocID);
-					$uploaded[$mrn][$filetype]['edocID'] = $edocID;
+					// // for diagnostics/testing:
+					// $docHash = \Files::docIdHash($edocID);
+					// $uploaded[$mrn][$filetype]['edocID'] = $edocID;
 					$sql = "INSERT INTO redcap_data (project_id, event_id, record, field_name, value, instance) 
 							  VALUES ($pid, $eid, '$targetRid', '$filetype', '$edocID', null)";
 					$query = db_query($sql);
@@ -165,7 +221,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 					} else {
 						$uploaded[$mrn][$filetype]['status'] = "File successfully attached to record ID: " . $targetRid;
 						//Do logging of new record creation
-						\Logging::logEvent($sql,"redcap_data","insert",$targetRid,"$table_pk = $targetRid","Create record");
+						\Logging::logEvent($sql,"redcap_data","insert",$targetRid,"record = $targetRid","Create record");
 						// Do logging of file upload
 						\Logging::logEvent($sql,"redcap_data","doc_upload",$targetRid,"$filetype = $edocID","Upload document");
 					}
@@ -180,14 +236,24 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	
 	public function printMRNForm() {
 		$html = file_get_contents($this->getUrl("html" . DIRECTORY_SEPARATOR . "base.html"));
-		$html = str_replace("STYLESHEET_FILEPATH", $this->getUrl("css" . DIRECTORY_SEPARATOR . "stylesheet.css"), $html);
+		$html = str_replace("STYLESHEET_FILEPATH", $this->getUrl("css" . DIRECTORY_SEPARATOR . "attachStyles.css"), $html);
 		$html = str_replace("JS_FILEPATH", $this->getUrl("js" . DIRECTORY_SEPARATOR . "nvdc.js"), $html);
 		$html = str_replace("{TITLE}", "Get Files By MRN", $html);
 		$body = "<div class='container'>
-			<p>Enter one MRN or a list of comma-separated MRNs to retrieve files for</p>
+			<div class='row justify-content-center pt-5 pb-3'>
+				<h3>Get Files By MRN</h3>
+			</div>
+			<div class='row justify-content-center'>
+				<p>Enter one MRN or a list of comma-separated MRNs to get files for.</p>
+			</div>
 			<form method='post'>
-				<input type='text' name='mrnList'>
-				<input type='submit' value='Submit'>
+				<div class='form-group'>
+					<label for='mrnList'>MRN(s)</label>
+					<input type='text' class='form-control mb-2' name='mrnList' aria-describedby='mrnHelp' placeholder='012345678, 123456789'>
+				</div>
+				<div>
+					<button type='submit' class='btn btn-primary'>Submit</button>
+				</div>
 			</form>
 		</div>";
 		$html = str_replace("{BODY}", $body, $html);
@@ -197,18 +263,44 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	
 	public function printUploadForm() {
 		$html = file_get_contents($this->getUrl("html" . DIRECTORY_SEPARATOR . "base.html"));
-		$html = str_replace("STYLESHEET_FILEPATH", $this->getUrl("css" . DIRECTORY_SEPARATOR . "stylesheet.css"), $html);
+		$html = str_replace("STYLESHEET_FILEPATH", $this->getUrl("css" . DIRECTORY_SEPARATOR . "attachStyles.css"), $html);
 		$html = str_replace("JS_FILEPATH", $this->getUrl("js" . DIRECTORY_SEPARATOR . "nvdc.js"), $html);
 		$html = str_replace("{TITLE}", "Attach Ventilator Files", $html);
-		$body = "<div class='container'>
-			<p>Select a zip archive of ventilator files to upload.</p>
-			<form enctype='multipart/form-data' method='post'>
-				<div class='custom-file'>
-					<input type='file' name='zip' class='custom-file-input' id='zip'>
-					<label class='custom-file-label' for='zip'>Choose zip file</label>
-				</div>
-				<button type='submit'>Upload</button>
-			</form>
+		$body = "<div class='col-6 container'>
+			<div class='row justify-content-center pt-5'>
+				<h3>Upload Ventilator Files</h3>
+			</div>
+			<div class='row justify-content-center pt-3'>
+				<p>Select a zip archive of ventilator files to upload.</p>
+			</div>
+			<div class='row justify-content-center'>
+				<p>Example folder stucture:</p>
+			</div>
+<div class='row justify-content-center'><pre class='col-4'>folder.zip/
+	[mrn1]/
+		Alarm file.txt
+		Logbook file.txt
+	[mrn2]/
+		Trends file.csv
+		Logbook file.txt</pre></div>
+			<div class='row justify-content-center'>
+				<ul>
+					<li>Files that are not .csv or .txt format will be ignored.</li>
+					<li>You may choose the filenames but they all should start with 'Alarm', 'Logbook', or 'Trends'.</li>
+					<li>Use the relevant MRN as folder names for the files included.</li>
+				</ul>
+			</div>
+			<div class='row justify-content-center'>
+				<form class='col-6' enctype='multipart/form-data' method='post'>
+					<div class='custom-file'>
+						<input type='file' name='zip' class='custom-file-input' id='zip'>
+						<label class='custom-file-label' for='zip'>Choose zip file</label>
+					</div>
+					<div class='row justify-content-center '>
+						<button class='mt-4 px-5 btn btn-lg btn-secondary' type='submit'>Upload</button>
+					</div>
+				</form>
+			</div>
 		</div>";
 		$html = str_replace("{BODY}", $body, $html);
 		
@@ -216,9 +308,53 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	}
 	
 	public function printUploadReport($statuses) {
-		echo "<pre>";
-		print_r($statuses);
-		echo "</pre>";
+		function getMRNsection($statuses, $mrn) {
+			$fileCount = count($statuses["$mrn"]) + 1;
+			$html = "<th rowspan='$fileCount'>
+						<span>$mrn</span>
+					</th>";
+			foreach ($statuses[$mrn] as $filetype => $info) {
+				$class = (substr($info['status'], 0, 26) == "File successfully attached") ? "good" : "warn";
+				$html .= "<tr class='$class'>
+						<td>" . $info['filename'] . "</td>
+						<td>" . $info['status'] . "</td>
+					</tr>";
+			}
+			return $html;
+		}
+		
+		$html = file_get_contents($this->getUrl("html" . DIRECTORY_SEPARATOR . "base.html"));
+		$html = str_replace("STYLESHEET_FILEPATH", $this->getUrl("css" . DIRECTORY_SEPARATOR . "attachStyles.css"), $html);
+		$html = str_replace("JS_FILEPATH", $this->getUrl("js" . DIRECTORY_SEPARATOR . "nvdc.js"), $html);
+		$html = str_replace("{TITLE}", "Attach Ventilator Files", $html);
+		
+		$body = "";
+		if (!$statuses['zipError']) {
+			$body = "
+			<div class='container pt-5'>
+				<h3 class='py-2'>Ventilator File Upload Report</h3>
+				<table class='col table'>
+					<thead>
+						<th>MRN</th>
+						<th>Filename</th>
+						<th>Status</th>
+					</thead>
+					<tbody>";
+			foreach ($statuses['fileStatuses'] as $mrn => $files) {
+				$body .= getMRNsection($statuses['fileStatuses'], $mrn);
+			}
+			$body .="</tbody>
+				</table>
+			</div>";
+		} else {
+			$body = "<div class='container pt-5'>
+				<h3 class='py-2'>Ventilator File Upload Report</h3>
+				<p>" . $statuses['zipError'] . "</p>
+			</div>";
+		}
+		
+		$html = str_replace("{BODY}", $body, $html);
+		return $html;
 	}
 	
 	public function removeAttachedFiles() {
@@ -285,60 +421,40 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			'status' => "File not uploaded because the NVDC module couldn't find a record for this MRN that didn't already have files attached."
 		);
 		
-		function getMRNSection($mrn) {
-			$fileCount = count($statuses[$mrn]);
-			$html = "<div class='row'>
-				<div class='col-2'>
-					<h5>MRN:</h5><span>046466244</span>
-					<h5>File Type:</h5><span>alarm_file</span>
-				</div>
-				<table class='col-10 table'>
-					<tbody>
-						<tr>
-							<th scope='row'>Filename:</th>
-							<td>" . $statuses['046466244']['alarm_file']['filename'] . "</td>
-						</tr>
-						<tr>
-							<th scope='row'>Status:</th>
-							<td>" . $statuses['046466244']['alarm_file']['status'] . "</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>";
+		function getMRNsection($statuses, $mrn) {
+			$fileCount = count($statuses["$mrn"]) + 1;
+			$html = "<th rowspan='$fileCount'>
+						<span>$mrn</span>
+					</th>";
+			foreach ($statuses[$mrn] as $filetype => $info) {
+				$class = (substr($info['status'], 0, 26) == "File successfully attached") ? "good" : "warn";
+				$html .= "<tr class='$class'>
+						<td>" . $info['filename'] . "</td>
+						<td>" . $info['status'] . "</td>
+					</tr>";
+			}
+			return $html;
 		}
 		
 		$html = file_get_contents($this->getUrl("html" . DIRECTORY_SEPARATOR . "base.html"));
 		$html = str_replace("STYLESHEET_FILEPATH", $this->getUrl("css" . DIRECTORY_SEPARATOR . "attachStyles.css"), $html);
 		$html = str_replace("JS_FILEPATH", $this->getUrl("js" . DIRECTORY_SEPARATOR . "nvdc.js"), $html);
 		$html = str_replace("{TITLE}", "Attach Ventilator Files", $html);
-		$body = "<div class='container pt-5'>
+		$body = "
+		<div class='container pt-5'>
 			<h3 class='py-2'>Ventilator File Upload Report</h3>
-			<div class='row'>
-				<table class='col table'>
-					<thead>
-						<th>MRN</th>
-						<th>Filename</th>
-						<th>Status</th>
-					</thead>
-					<tbody>
-						<th rowspan='4'>
-							<span>046466244</span>
-						</th>
-						<tr>
-							<td>" . $statuses['046466244']['alarm_file']['filename'] . "</td>
-							<td>" . $statuses['046466244']['alarm_file']['status'] . "</td>
-						</tr>
-						<tr>
-							<td>" . $statuses['046466244']['log_file']['filename'] . "</td>
-							<td>" . $statuses['046466244']['log_file']['status'] . "</td>
-						</tr>
-						<tr>
-							<td>" . $statuses['046466244']['trends_file']['filename'] . "</td>
-							<td>" . $statuses['046466244']['trends_file']['status'] . "</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
+			<table class='col table'>
+				<thead>
+					<th>MRN</th>
+					<th>Filename</th>
+					<th>Status</th>
+				</thead>
+				<tbody>";
+		foreach ($statuses as $mrn => $files) {
+			$body .= getMRNsection($statuses, $mrn);
+		}
+		$body .="</tbody>
+			</table>
 		</div>";
 		$html = str_replace("{BODY}", $body, $html);
 		
