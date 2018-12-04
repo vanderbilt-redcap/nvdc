@@ -285,19 +285,60 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			'status' => "File not uploaded because the NVDC module couldn't find a record for this MRN that didn't already have files attached."
 		);
 		
+		function getMRNSection($mrn) {
+			$fileCount = count($statuses[$mrn]);
+			$html = "<div class='row'>
+				<div class='col-2'>
+					<h5>MRN:</h5><span>046466244</span>
+					<h5>File Type:</h5><span>alarm_file</span>
+				</div>
+				<table class='col-10 table'>
+					<tbody>
+						<tr>
+							<th scope='row'>Filename:</th>
+							<td>" . $statuses['046466244']['alarm_file']['filename'] . "</td>
+						</tr>
+						<tr>
+							<th scope='row'>Status:</th>
+							<td>" . $statuses['046466244']['alarm_file']['status'] . "</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>";
+		}
+		
 		$html = file_get_contents($this->getUrl("html" . DIRECTORY_SEPARATOR . "base.html"));
-		$html = str_replace("STYLESHEET_FILEPATH", $this->getUrl("css" . DIRECTORY_SEPARATOR . "stylesheet.css"), $html);
+		$html = str_replace("STYLESHEET_FILEPATH", $this->getUrl("css" . DIRECTORY_SEPARATOR . "attachStyles.css"), $html);
 		$html = str_replace("JS_FILEPATH", $this->getUrl("js" . DIRECTORY_SEPARATOR . "nvdc.js"), $html);
 		$html = str_replace("{TITLE}", "Attach Ventilator Files", $html);
-		$body = "<div class='container'>
-			<p>Select a zip archive of ventilator files to upload.</p>
-			<form enctype='multipart/form-data' method='post'>
-				<div class='custom-file'>
-					<input type='file' name='zip' class='custom-file-input' id='zip'>
-					<label class='custom-file-label' for='zip'>Choose zip file</label>
-				</div>
-				<button type='submit'>Upload</button>
-			</form>
+		$body = "<div class='container pt-5'>
+			<h3 class='py-2'>Ventilator File Upload Report</h3>
+			<div class='row'>
+				<table class='col table'>
+					<thead>
+						<th>MRN</th>
+						<th>Filename</th>
+						<th>Status</th>
+					</thead>
+					<tbody>
+						<th rowspan='4'>
+							<span>046466244</span>
+						</th>
+						<tr>
+							<td>" . $statuses['046466244']['alarm_file']['filename'] . "</td>
+							<td>" . $statuses['046466244']['alarm_file']['status'] . "</td>
+						</tr>
+						<tr>
+							<td>" . $statuses['046466244']['log_file']['filename'] . "</td>
+							<td>" . $statuses['046466244']['log_file']['status'] . "</td>
+						</tr>
+						<tr>
+							<td>" . $statuses['046466244']['trends_file']['filename'] . "</td>
+							<td>" . $statuses['046466244']['trends_file']['status'] . "</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
 		</div>";
 		$html = str_replace("{BODY}", $body, $html);
 		
