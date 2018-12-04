@@ -274,6 +274,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 				<p>Select a zip archive of ventilator files to upload.</p>
 			</div>
 			<div class='row justify-content-center'>
+				<p>Note: The NVDC module will try to upload to the latest record that has no attached alarm, log, or trends files.</p>
+			</div>
+			<div class='row justify-content-center'>
 				<p>Example folder stucture:</p>
 			</div>
 <div class='row justify-content-center'><pre class='col-4'>folder.zip/
