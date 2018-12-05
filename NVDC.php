@@ -10,7 +10,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	public function downloadFiles($mrnList = ['all' => true]) {
 		// # downloadFiles will send the user a .zip of all the alarm, log, and trends file for their NICU Ventilator Data project
 		// # optionally, supply a $mrnList to filter to only those MRNs
-		$pid = $this->getProjectSettings()['system-project']['value'];
+		$pid = $this->getProjectId();
 		$filterLogic = "isnumber([alarm_file]) or isnumber([log_file]) or isnumber([trends_file])";
 		$edocInfo = \REDCap::getData($pid, 'array', NULL, array('mrn', 'alarm_file', 'log_file', 'trends_file'), NULL, NULL, NULL, NULL, NULL, $filterLogic);
 		
