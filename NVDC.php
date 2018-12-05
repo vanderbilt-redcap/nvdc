@@ -15,10 +15,10 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		$edocInfo = \REDCap::getData($pid, 'array', NULL, array('mrn', 'alarm_file', 'log_file', 'trends_file'), NULL, NULL, NULL, NULL, NULL, $filterLogic);
 		
 		// // diagnostics
-		// echo "<pre>";
-		// print_r($edocInfo);
-		// echo "</pre>";
-		// exit;
+		echo "<pre>";
+		print_r($edocInfo);
+		echo "</pre>";
+		exit;
 		
 		// # get array of ids to help us build sql string query
 		$edocIDs = [];
