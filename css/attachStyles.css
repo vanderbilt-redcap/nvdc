@@ -1,3 +1,9 @@
+.uploadStatusMessage {
+	font-family: sans-serif;
+	background-color: #efefef;
+	padding: .5em 1.5em;
+}
+
 tr.warn {
 	background-color: #ffeaea;
 }
