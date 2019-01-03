@@ -38,6 +38,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			const ECN_SN_PAIRS = JSON.parse('$pairs_json');
 			$('body').on('change', '[name=vent_ecn]', function() {
 				var ecn = $(this).val();
+				console.log('hi2');
 				if(ECN_SN_PAIRS.hasOwnProperty(ecn)) {
 					var sn = ECN_SN_PAIRS[ecn];
 					$(\"[name='vent_sn']\").val(sn);
