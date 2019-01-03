@@ -10,7 +10,9 @@
       "institution": "Vanderbilt University Medical Center"
     }
   ],
-  "permissions": [],
+  "permissions": [
+	"redcap_data_entry_form"
+  ],
   "enable-every-page-hooks-on-system-pages": false,
   "links": {
     "project": [

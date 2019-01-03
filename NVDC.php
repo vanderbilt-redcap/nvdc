@@ -7,12 +7,45 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		// Other code to run when object is instantiated
 	}
 	
-	// function redcap_data_entry_form($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
-		# when a user enters a vent_ecn, we try to get the associated vent_sn and put it in place
-		// $("body").on("change", "[name=vent_ecn]", function() {
+	function redcap_data_entry_form($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
+		# Purpose of this hook: When a user enters a vent_ecn, we try to get the associated vent_sn and put it in place
+		# We can get the ECN-SN pairs from a file in the file repository that has comment "ECN-SN pairs"
+		
+		$pairs = [];
+		$query = "SELECT * FROM redcap_edocs_metadata
+			WHERE project_id=30 AND doc_name LIKE '%ECN-SN_pairs%'
+			ORDER BY stored_date DESC
+			LIMIT 1";
+		if ($result = db_query($query)) {
+			$record = db_fetch_assoc($result);
 			
-		// })
-	// }
+			if(!file_exists(EDOC_PATH . $record['stored_name'])) return;
+			$pairsText = file_get_contents(EDOC_PATH . $record['stored_name']);
+			
+			# iterate
+			foreach(preg_split("/((\r?\n)|(\r\n?))/", $pairsText) as $line){
+				preg_match_all("/ECN:\s+(\d+).*SN:\s*(\w+-\d+)/", $line, $matches);
+				if($ecn = $matches[1][0] and $sn = $matches[2][0]){
+					$pairs[$ecn] = $sn;
+				}
+			}
+			if(count($pairs) <= 0) return;
+			$pairs_json = json_encode($pairs);
+			
+			echo "
+			<script>
+			// automatically set ventilator Serial Number when ventilator ECN is supplied
+			const ECN_SN_PAIRS = JSON.parse('$pairs_json');
+			$('body').on('change', '[name=vent_ecn]', function() {
+				var ecn = $(this).val();
+				if(ECN_SN_PAIRS.hasOwnProperty(ecn)) {
+					var sn = ECN_SN_PAIRS[ecn];
+					$(\"[name='vent_sn']\").val(sn);
+				}
+			})
+			</script>";
+		}
+	}
 	
 	public function downloadFiles($mrnList = ['all' => true]) {
 		// # downloadFiles will send the user a .zip of all the alarm, log, and trends file for their NICU Ventilator Data project
