@@ -47,6 +47,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 				if(ECN_SN_PAIRS.hasOwnProperty(ecn)) {
 					var sn = ECN_SN_PAIRS[ecn];
 					$(\"[name='vent_sn']\").val(sn);
+					console.log('sn found');
+				} else {
+					console.log('sn not found');
 				}
 			})
 			</script>";
