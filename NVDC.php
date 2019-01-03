@@ -18,16 +18,16 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			LIMIT 1";
 		if ($result = db_query($query)) {
 			$record = db_fetch_assoc($result);
-			$fn = EDOC_PATH . $record['stored_name'];
+			$pairsFilename = EDOC_PATH . $record['stored_name'];
 			# check to make sure file exists
-			if(!file_exists(EDOC_PATH . $record['stored_name'])){
+			if(!file_exists($pairsFilename)){
 				
-				echo "<script>console.log('file doesn\'t exist at: $fn')</script>";
+				echo "<script>console.log('file doesn\'t exist at: $pairsFilename')</script>";
 				return;
 			}
 			
 			# iterate through file contents line by line, finding/storing ECN SN pairs
-			$pairsText = file_get_contents(EDOC_PATH . $record['stored_name']);
+			$pairsText = file_get_contents($pairsFilename);
 			foreach(preg_split("/((\r?\n)|(\r\n?))/", $pairsText) as $line){
 				preg_match_all("/ECN:\s+(\d+).*SN:\s*(\w+-\d+)/", $line, $matches);
 				if($ecn = $matches[1][0] and $sn = $matches[2][0]){
@@ -39,11 +39,8 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			
 			echo "
 			<script>
-			//$fn
-			//$pairsText
-			//$pairs_json
+			// this script makes it so that the data entry from automatically sets ventilator Serial Number when ventilator ECN is supplied
 			console.log('hook here');
-			// automatically set ventilator Serial Number when ventilator ECN is supplied
 			const ECN_SN_PAIRS = JSON.parse('$pairs_json');
 			$('body').on('change', '[name=vent_ecn]', function() {
 				var ecn = $(this).val();
