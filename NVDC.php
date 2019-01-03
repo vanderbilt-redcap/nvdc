@@ -39,6 +39,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			
 			echo "
 			<script>
+			//$pairsText
 			//$pairs_json
 			console.log('hook here');
 			// automatically set ventilator Serial Number when ventilator ECN is supplied
