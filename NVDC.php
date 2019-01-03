@@ -39,7 +39,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			
 			echo "
 			<script>
-			// this script makes it so that the data entry from automatically sets ventilator Serial Number when ventilator ECN is supplied
+			// this script makes it so that the data entry form automatically sets ventilator Serial Number when ventilator ECN is supplied
 			console.log('hook here');
 			const ECN_SN_PAIRS = JSON.parse('$pairs_json');
 			$('body').on('change', '[name=vent_ecn]', function() {
@@ -174,6 +174,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		}
 		
 		// echo "<pre>";
+		// echo $zip->numFiles . "\n";
 		# iterate through files uploaded and see if we can attach them to applicable record
 		for ($i = 0; $i < $zip->numFiles; $i++) {
 			# figure out this file's name, serial, date, type
@@ -242,6 +243,8 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 				}
 			}
 		}
+		// echo 'return info count ' . count($returnInfo) . "\n";
+		// echo "</pre>";
 		
 		$zip->close();
 		unlink($_FILES['zip']['tmp_name']);
@@ -358,8 +361,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 						<th>Status</th>
 					</thead>
 					<tbody>";
-			foreach ($statuses as $i => $arr) {
-				if ($i == 'zipError') continue;
+			for($i = 0; $i <= count($statuses)-1; $i++) {
+				$arr = $statuses[$i];
+				
 				$body .= "
 						<tr>
 							<td>" . $arr['filename'] . "</td>
