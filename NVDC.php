@@ -13,7 +13,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		
 		$pairs = [];
 		$query = "SELECT * FROM redcap_edocs_metadata
-			WHERE project_id=30 AND doc_name LIKE '%ECN-SN_pairs%'
+			WHERE project_id=$project_id AND doc_name LIKE '%ECN-SN_pairs%'
 			ORDER BY stored_date DESC
 			LIMIT 1";
 		if ($result = db_query($query)) {
