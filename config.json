@@ -30,11 +30,6 @@
         "name": "Attach Ventilator Data Files",
         "icon": "attach",
         "url": "attachVentilatorFiles.php"
-      },
-      {
-        "name": "Remove All Files",
-        "icon": "attach",
-        "url": "devOnly/removeAllFiles.php"
       }
     ],
     "control-center": []
