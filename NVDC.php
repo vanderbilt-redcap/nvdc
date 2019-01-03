@@ -19,17 +19,28 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		if ($result = db_query($query)) {
 			$record = db_fetch_assoc($result);
 			
-			if(!file_exists(EDOC_PATH . $record['stored_name'])) return;
-			$pairsText = file_get_contents(EDOC_PATH . $record['stored_name']);
+			# check to make sure file exists
+			if(!file_exists(EDOC_PATH . $record['stored_name'])){
+				$fn = EDOC_PATH . $record['stored_name'];
+				echo "<script>console.log('file doesn\'t exist at: $fn')</script>";
+				return;
+			}
 			
-			# iterate
+			# iterate through file contents line by line, finding/storing ECN SN pairs
+			$pairsText = file_get_contents(EDOC_PATH . $record['stored_name']);
 			foreach(preg_split("/((\r?\n)|(\r\n?))/", $pairsText) as $line){
 				preg_match_all("/ECN:\s+(\d+).*SN:\s*(\w+-\d+)/", $line, $matches);
 				if($ecn = $matches[1][0] and $sn = $matches[2][0]){
 					$pairs[$ecn] = $sn;
 				}
 			}
-			if(count($pairs) <= 0) return;
+			
+			# make sure there were pairs
+			if(count($pairs) <= 0){
+				echo "<script>console.log('no pairs found in file')</script>";
+				return;
+			}
+			
 			$pairs_json = json_encode($pairs);
 			
 			echo "
