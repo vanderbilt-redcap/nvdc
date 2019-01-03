@@ -18,10 +18,10 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			LIMIT 1";
 		if ($result = db_query($query)) {
 			$record = db_fetch_assoc($result);
-			
+			$fn = EDOC_PATH . $record['stored_name'];
 			# check to make sure file exists
 			if(!file_exists(EDOC_PATH . $record['stored_name'])){
-				$fn = EDOC_PATH . $record['stored_name'];
+				
 				echo "<script>console.log('file doesn\'t exist at: $fn')</script>";
 				return;
 			}
@@ -39,6 +39,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			
 			echo "
 			<script>
+			//$fn
 			//$pairsText
 			//$pairs_json
 			console.log('hook here');
