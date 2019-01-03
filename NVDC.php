@@ -35,12 +35,6 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 				}
 			}
 			
-			# make sure there were pairs
-			if(count($pairs) <= 0){
-				echo "<script>console.log('no pairs found in file')</script>";
-				return;
-			}
-			
 			$pairs_json = json_encode($pairs);
 			
 			echo "
@@ -49,7 +43,6 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			const ECN_SN_PAIRS = JSON.parse('$pairs_json');
 			$('body').on('change', '[name=vent_ecn]', function() {
 				var ecn = $(this).val();
-				console.log('hi2');
 				if(ECN_SN_PAIRS.hasOwnProperty(ecn)) {
 					var sn = ECN_SN_PAIRS[ecn];
 					$(\"[name='vent_sn']\").val(sn);
