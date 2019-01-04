@@ -173,29 +173,44 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			return $returnInfo;
 		}
 		
-		// echo "<pre>";
-		// echo $zip->numFiles . "\n";
 		# iterate through files uploaded and see if we can attach them to applicable record
 		for ($i = 0; $i < $zip->numFiles; $i++) {
 			# figure out this file's name, serial, date, type
+			$returnInfo[$i] = [];
 			$fileInfo = $zip->statIndex($i);
-			preg_match_all("/\/(.+\.csv|.+\.txt)/", $zip->getNameIndex($i), $matches);
-			$filename = $matches[1][0];
+			$filename = $zip->getNameIndex($i);
+			$returnInfo[$i]['filename'] = $filename;
+			
+			# $filetype must be "Alarm", "Logbook", or "Trends"
 			preg_match_all("/^(\w+)/", $filename, $matches);
-			# $filetype should ideally be "Alarm", "Logbook", or "Trends"
-			$filetype = $matches[1][0];
+			if(gettype($matches[1][0]) == 'string' && in_array($matches[1][0], ['Alarm', 'Logbook', 'Trends'])) {
+				$filetype = $matches[1][0];
+			} else {
+				$returnInfo[$i]['status'] = "Attachment failed. File name must start with 'Alarm', 'Logbook', or 'Trends'.";
+				continue;
+			}
+			
+			# must be able to find a valid serial number (e.g., XXXX-####)
 			preg_match_all("/\w{4}-\d{4}/", $filename, $matches);
-			$ventSerial = $matches[0][0];
-			preg_match_all("/\d+-\w+-\d+/", $filename, $matches);
-			$downloadDate = \DateTime::createFromFormat("j-M-Y", $matches[0][0])->format("Y-m-j");
-			if (!$filename or !$filetype or !$ventSerial or !$downloadDate) continue;
+			if(gettype($matches[0][0]) == 'string') {
+				$ventSerial = $matches[0][0];
+			} else {
+				$returnInfo[$i]['status'] = "Attachment failed. File name must include a valid ventilator Serial Number (format: 4 letters, dash, 4 numbers, like XXXX-0000).\n" . print_r($matches, true);
+				continue;
+			}
+			
+			# must be able to find date
+			preg_match_all("/\d+-[[:alpha:]]+-\d+/", $filename, $matches);
+			if(gettype($matches[0][0]) == 'string') {
+				$downloadDate = \DateTime::createFromFormat("j-M-Y", $matches[0][0])->format("Y-m-j");
+			} else {
+				$returnInfo[$i]['status'] = "Attachment failed. File name must include a valid date (example: January 1st, 2020 should be written as: 01-Jan-2020).\n" . print_r($matches, true);
+				continue;
+			}
 			
 			# diagnostics:
 			// echo "filename: $filename - filetype: $filetype - ventSerial: $ventSerial - downloadDate: $downloadDate\n";
 			
-			# add filenames for recognized files, add filename and status for unrecognized files
-			$returnInfo[$i] = [];
-			$returnInfo[$i]['filename'] = $filename;
 			if (!in_array($filetype, array("Alarm", "Logbook", "Trends"))) {
 				if (!isset($uploaded[$i])) $uploaded[$i] = [];
 				$name = "";
@@ -243,8 +258,6 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 				}
 			}
 		}
-		// echo 'return info count ' . count($returnInfo) . "\n";
-		// echo "</pre>";
 		
 		$zip->close();
 		unlink($_FILES['zip']['tmp_name']);
