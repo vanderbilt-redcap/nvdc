@@ -177,8 +177,10 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		for ($i = 0; $i < $zip->numFiles; $i++) {
 			# figure out this file's name, serial, date, type
 			$returnInfo[$i] = [];
-			$fileInfo = $zip->statIndex($i);
 			$filename = $zip->getNameIndex($i);
+			if(strpos($filename, '/') !== false){
+				$filename = substr($filename, strrpos($filename, '/') + 1);
+			}
 			$returnInfo[$i]['filename'] = $filename;
 			
 			# $filetype must be "Alarm", "Logbook", or "Trends"
