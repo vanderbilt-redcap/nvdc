@@ -204,7 +204,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			# must be able to find date
 			preg_match_all("/\d+-[[:alpha:]]+-\d+/", $filename, $matches);
 			if(gettype($matches[0][0]) == 'string') {
-				$downloadDate = \DateTime::createFromFormat("j-M-Y", $matches[0][0])->format("Y-m-j");
+				$downloadDate = \DateTime::createFromFormat("j-M-Y", $matches[0][0])->format("Y-m-d");
 			} else {
 				$returnInfo[$i]['status'] = "Attachment failed. File name must include a valid date (example: January 1st, 2020 should be written as: 01-Jan-2020).\n" . print_r($matches, true);
 				continue;
@@ -232,6 +232,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 				# see if we can find a record to upload to
 				$filterLogic = "[vent_sn]='$ventSerial' and [date_vent]='$downloadDate' and ([" . $names[$filetype] . "] = \"\")";
 				$recordsInfo = \REDCap::getData($pid, 'array', NULL, array('date_vent', 'vent_sn', 'alarm_file', 'log_file', 'trends_file'), NULL, NULL, NULL, NULL, NULL, $filterLogic);
+				// exit("<pre>" . print_r($recordsInfo, true) . "\n$ventSerial\n$downloadDate</pre>");
 				$targetRid = 0;
 				foreach ($recordsInfo as $rid => $entry) {
 					if ($rid > $targetRid) $targetRid = $rid;
