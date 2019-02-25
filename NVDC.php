@@ -101,7 +101,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		
 		while($row = db_fetch_assoc($query)) {
 			$edoc = file_get_contents(EDOC_PATH . $row['stored_name']);
-			if ($edoc) {
+			if (strlen($edoc) > 0) {
 				$zip->addFromString($mrnDict[$row['doc_id']] . " " . $row['doc_name'], $edoc);
 			}
 		}
@@ -142,6 +142,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	}
 	
 	public function handleZip() {
+		ini_set('memory_limit', '4G');
 		$returnInfo = [];
 		$returnInfo['zipError'] = "";
 		# find the uploaded zip archive in $_FILES and upload mrn folder > alarm/log/trends files to appropriate record
@@ -401,7 +402,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	}
 	
 	public function removeAttachedFiles() {
-		$pid = 30;
+		$pid = $this->getProjectId();
 		$q1 = db_query("SELECT * FROM redcap_data
 						INNER JOIN redcap_edocs_metadata ON redcap_data.value=redcap_edocs_metadata.doc_id
 						WHERE redcap_data .project_id=$pid AND redcap_data.field_name in ('alarm_file', 'log_file', 'trends_file')");
@@ -412,7 +413,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			$edocIDs[] = $row['doc_id'];
 		}
 		# delete associated redcap_edocs_metadata entries
-		$q2 = db_query("DELETE FROM redcap_edocs_metadata WHERE project_id=30");
+		$q2 = db_query("DELETE FROM redcap_edocs_metadata WHERE project_id=$pid");
 		$countDocDeleted = db_affected_rows($q2);
 		
 		# delete associated redcap_data entries
@@ -420,5 +421,53 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		$countFieldDeleted = db_affected_rows($q3);
 		
 		echo "Removed $countDocDeleted documents and $countFieldDeleted field entries.";
+	}
+	
+	public function printRandomPage() {
+		$str = "";
+		$domain = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+		$length = strlen($domain);
+		for ($i = 0; $i < 9999 ; $i++) {
+			for ($j = 0; $j < 100; $j++) {
+				$str .= $domain[rand(0, $length - 1)];
+			}
+			$str .= "\n";
+		}
+		return $str;
+	}
+	
+	public function attachFakeFiles() {
+		$pid = $this->getProjectId();
+		$eid = $this->getFirstEventId();
+		$sqlValues1 = [];
+		for ($rid = 2; $rid < 101; $rid++) {
+			foreach (['Alarm', 'Logbook', 'Trends'] as $i => $typeName) {
+				$fileContents = $this->printRandomPage();
+				$tmpFilename = APP_PATH_TEMP . "tmp_$typeName" . "_NVDC_file_$rid.txt";
+				file_put_contents($tmpFilename, $fileContents);
+				$tmpFileInfo = array(
+					"name" => $typeName . " ASCN-0001 25-Feb-2019 16_06_02.txt",
+					"tmp_name" => $tmpFilename,
+					"size" => filesize($tmpFilename)
+				);
+				$edocID = \Files::uploadFile($tmpFileInfo, $pid);
+				$sqlValues1[] = [$pid, $eid, $rid, '"' . ['alarm_file', 'log_file', 'trends_file'][$i] . '"', $edocID];
+			}
+		}
+		
+		# insert to db
+		// $sql = "INSERT INTO redcap_data (project_id, event_id, record, field_name, value, instance) 
+		//		  VALUES ($pid, $eid, '$targetRid', '" . $names[$filetype] . "', '$edocID', null)";
+		$query = "INSERT INTO redcap_data (project_id, event_id, record, field_name, value) VALUES";
+		foreach ($sqlValues1 as $arr) {
+			$query .= " (" . implode(', ', $arr) . "),";
+		}
+		$query = substr($query, 0, -1);
+		echo ("<pre>$query\n");
+		// exit();
+		$result = db_query($query);
+		echo "\n";
+		echo $conn->connect_errno;
+		echo ("</pre>");
 	}
 }
