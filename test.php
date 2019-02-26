@@ -27,6 +27,10 @@ header('Content-disposition: attachment; filename="file.zip"');
 $fname = $module->getModulePath() . "test.php";
 $fp = popen("zip -r - $fname", 'r');
 
+echo gettype($fp);
+echo "<br />";
+echo (is_resource($fp));
+echo "<br />";
 var_dump($fp);
 pclose($fp);
 exit();
