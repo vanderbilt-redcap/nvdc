@@ -45,7 +45,7 @@
 
 error_reporting(E_ALL);
 $modPath = $module->getModulePath();
-$command = "zip -r - $modPath" . "test.php";
+$command = "zzip -r - $modPath" . "test.php";
 $spec = [
 	0 => ["pipe", 'r'],
 	1 => ["pipe", 'w'],
@@ -53,9 +53,13 @@ $spec = [
 ];
 $process = proc_open($command, $spec, $pipes);
 if (is_resource($process)) {
-	exit('yes');
+	echo('yes');
+	echo("<br />");
+	var_dump($process);
 } else {
-	exit('no');
+	echo('no');
+	echo("<br />");
+	var_dump($process);
 }
 proc_close($process);
 exit();
