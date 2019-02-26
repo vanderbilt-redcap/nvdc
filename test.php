@@ -1,12 +1,21 @@
 <?
+
+if (function_exists('exec')) echo "exec is enabled<br />";
+if (function_exists('popen')) echo "popen is enabled<br />";
+if (function_exists('proc_open')) echo "proc_open is enabled<br />";
+exit();
+
 // $fname = $module->getModulePath() . "test.php";
-$fp = popen("zip - /app001/www/redcap/modules/nvdc_v1.0/test.php", 'r');
+$fp = popen("zip - /app001/www/redcap/modules/nvdc_v1.0/test.php 2>&1", 'r');
 if (is_resource($fp)) {
 	header("Content-Type: application/zip");
 	header("Content-Disposition: attachment; filename=\"test.zip\"");
 	echo fpassthru($fp);
 	fclose($fp);
 	exit();
+} elseif ($fp === false) {
+	fclose($fp);
+	echo "\$fp was FALSE";
 } else {
 	var_dump($fp);
 	echo "<br />";
