@@ -28,15 +28,19 @@
 // pclose($fp);
 
 // make sure to send all headers first
-header('Content-Type: application/octet-stream');
-header('Content-disposition: attachment; filename="file.zip"');
 
 // use popen to execute a unix command pipeline
 // and grab the stdout as a php stream
 $fpath1 = EDOC_PATH . "20181205095556_pid1158_nIwRKc.txt";
 $fp = popen("zip -r - $fpath1", 'r');
 
+if (!$fp) {
+	exit('error');
+}
+
 // pick a bufsize that makes you happy (8192 has been suggested).
+header('Content-Type: application/octet-stream');
+header('Content-disposition: attachment; filename="file.zip"');
 $bufsize = 8192;
 $buff = '';
 while( !feof($fp) ) {
