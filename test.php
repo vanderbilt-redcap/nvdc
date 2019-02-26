@@ -1,26 +1,4 @@
 <?php
-// $module->removeAttachedFiles();
-// $module->attachFakeFiles();
-
-// example file names:
-// Alarm history Export 7 days Infinity Acute Care System Workstation Critical Care Build 7016 ASEB-0069 01-Feb-2019 16_06_02.txt
-// Logbook Export 7 days Infinity Acute Care System Workstation Critical Care Build 7016 ASCN-0001 01-Feb-2019 16_19_34.txt
-// Trends Export 7 days Infinity Acute Care System Workstation Critical Care Build 7016 ASCN-0001 01-Feb-2019 16_19_41.csv	
-
-// Alarm ASCN-0001 25-Feb-2019 16_06_02.txt
-// Logbook ASCN-0001 25-Feb-2019 16_06_02.txt
-// Trends ASCN-0001 25-Feb-2019 16_06_02.txt
-
-<?php
-error_reporting(E_ALL);
-// make sure to send all headers first
-// Content-Type is the most important one (probably)
-
-// use popen to execute a unix command pipeline
-// and grab the stdout as a php stream
-// (you can use proc_open instead if you need to 
-// control the input of the pipeline too)
-//
 $fname = $module->getModulePath() . "test.php";
 $fp = popen("zip -r - $fname", 'r');
 
@@ -41,3 +19,15 @@ while( !feof($fp) ) {
    echo $buff;
 }
 pclose($fp);
+
+// $module->removeAttachedFiles();
+// $module->attachFakeFiles();
+
+// example file names:
+// Alarm history Export 7 days Infinity Acute Care System Workstation Critical Care Build 7016 ASEB-0069 01-Feb-2019 16_06_02.txt
+// Logbook Export 7 days Infinity Acute Care System Workstation Critical Care Build 7016 ASCN-0001 01-Feb-2019 16_19_34.txt
+// Trends Export 7 days Infinity Acute Care System Workstation Critical Care Build 7016 ASCN-0001 01-Feb-2019 16_19_41.csv	
+
+// Alarm ASCN-0001 25-Feb-2019 16_06_02.txt
+// Logbook ASCN-0001 25-Feb-2019 16_06_02.txt
+// Trends ASCN-0001 25-Feb-2019 16_06_02.txt
