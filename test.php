@@ -1,24 +1,40 @@
-<?php
-$fname = $module->getModulePath() . "test.php";
-$fp = popen("zip -r - $fname", 'r');
+<?
+$zipfilename = "zip_file_name.zip";
 
-echo gettype($fp);
-echo "<br />";
-echo (is_resource($fp));
-echo "<br />";
-var_dump($fp);
-pclose($fp);
-exit();
+if( isset( $files ) ) unset( $files );
 
-header('Content-Type: application/octet-stream');
-header('Content-disposition: attachment; filename="file.zip"');
-$bufsize = 8192;
-$buff = '';
-while( !feof($fp) ) {
-   $buff = fread($fp, $bufsize);
-   echo $buff;
+// $target = "/some/directory/of/files/you/want/to/zip";
+$target = $module->getModulePath();
+
+$d = dir( $target );
+
+while( false !== ( $entry = $d->read() ) )
+{
+	if( substr( $entry, 0, 1 ) != "." && !is_dir( $entry ) ) 
+	{
+		$files[] = $entry;
+	}
 }
-pclose($fp);
+
+header( "Content-Type: application/x-zip" );
+header( "Content-Disposition: attachment; filename=\"$zipfilename\"" );
+
+$filespec = "";
+
+foreach( $files as $entry )
+{
+	$filespec .= "\"$entry\" ";
+}
+
+chdir( $target );
+
+$stream = popen( "/usr/bin/zip -q - $filespec", "r" );
+
+if( $stream )
+{
+	fpassthru( $stream );
+	fclose( $stream );
+}
 
 // $module->removeAttachedFiles();
 // $module->attachFakeFiles();
@@ -31,3 +47,4 @@ pclose($fp);
 // Alarm ASCN-0001 25-Feb-2019 16_06_02.txt
 // Logbook ASCN-0001 25-Feb-2019 16_06_02.txt
 // Trends ASCN-0001 25-Feb-2019 16_06_02.txt
+?>
