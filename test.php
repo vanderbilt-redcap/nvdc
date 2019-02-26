@@ -45,7 +45,7 @@
 
 error_reporting(E_ALL);
 $modPath = "~/www/redcap/modules/nvdc_v1.0/";
-$command = "zip $modPath" . "NICU_Ventilator_Data_Files.zip $modPath" . "test.php";
+$command = "zip -r - $modPath" . "test.php";
 $spec = [
 	0 => ["pipe", 'r'],
 	1 => ["pipe", 'w'],
