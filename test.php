@@ -55,7 +55,7 @@ $process = proc_open($command, $spec, $pipes);
 header('Content-Type: application/octet-stream');
 // header('Content-Description: File Transfer');
 header('Content-Disposition: attachment; filename=NICU_Ventilator_Data_Files.zip');
-while (false !== ($buffer = stream_get_contents($pipes[1]))) {
+while ($buffer = stream_get_contents($pipes[1], 8192)) {
 	echo $buffer;
 }
 proc_close($process);
