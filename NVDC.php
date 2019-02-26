@@ -149,8 +149,16 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		// # close and send!
 		$zip->close();
 		$zipFileName = "NICU_Ventilator_Data_Files.zip";
-		header("Content-disposition: attachment; filename=$zipFileName");
-		header('Content-type: application/zip');
+		header('Content-Type: application/zip');
+		header('Content-Description: File Transfer');
+		header('Content-Disposition: attachment; filename='.$zipFileName);
+		header('Content-Transfer-Encoding: binary');
+		header('Expires: 0');
+		header('Cache-Control: must-revalidate');
+		header('Pragma: public');
+		header('Content-Length: ' . filesize($fullpath));
+		ob_clean();
+		flush();
 		readfile($fullpath);
 		unlink($fullpath);
 		// printMem("after zip unlink");
