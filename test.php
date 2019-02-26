@@ -26,5 +26,6 @@
 // echo(gettype($child['pipes']) . "<br />");
 // exit;
 
+error_reporting(E_ALL);
 exec('zip test.zip test.php', $out, $ret);
 exit($out . "<br />" . $ret . "<br />" . file_get_contents("php://stderr"));
