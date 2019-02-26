@@ -15,9 +15,6 @@
 error_reporting(E_ALL);
 // make sure to send all headers first
 // Content-Type is the most important one (probably)
-//
-header('Content-Type: application/octet-stream');
-header('Content-disposition: attachment; filename="file.zip"');
 
 // use popen to execute a unix command pipeline
 // and grab the stdout as a php stream
@@ -35,7 +32,8 @@ var_dump($fp);
 pclose($fp);
 exit();
 
-// pick a bufsize that makes you happy (8192 has been suggested).
+header('Content-Type: application/octet-stream');
+header('Content-disposition: attachment; filename="file.zip"');
 $bufsize = 8192;
 $buff = '';
 while( !feof($fp) ) {
