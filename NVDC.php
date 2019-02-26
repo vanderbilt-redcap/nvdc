@@ -2,11 +2,6 @@
 namespace Vanderbilt\NVDC;
 
 class NVDC extends \ExternalModules\AbstractExternalModule {
-	public function __construct() {
-		parent::__construct();
-		// Other code to run when object is instantiated
-	}
-	
 	function redcap_data_entry_form($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
 		# Purpose of this hook: When a user enters a vent_ecn, we try to get the associated vent_sn and put it in place
 		# We can get the ECN-SN pairs from a file in the file repository that has comment "ECN-SN pairs"
@@ -56,9 +51,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		}
 	}
 	
-	public function downloadFiles($mrnList = ['all' => true]) {
-		// # downloadFiles will send the user a .zip of all the alarm, log, and trends file for their NICU Ventilator Data project
-		// # optionally, supply a $mrnList to filter to only those MRNs
+	public function makeZip($mrnList) {
+		// downloadFiles will send the user a .zip of all the alarm, log, and trends file for their NICU Ventilator Data project
+		// optionally, supply a $mrnList to filter to only those MRNs
 		$pid = $this->getProjectId();
 		$filterLogic = "isnumber([alarm_file]) or isnumber([log_file]) or isnumber([trends_file])";
 		$edocInfo = \REDCap::getData($pid, 'array', NULL, array('mrn', 'alarm_file', 'log_file', 'trends_file'), NULL, NULL, NULL, NULL, NULL, $filterLogic);
@@ -67,12 +62,12 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			// echo("(peak/usage): (" . round(memory_get_peak_usage()/1024/1024, 0) . 'MB/' . round(memory_get_usage()/1024/1024, 0) . "MB)\t" . $sectionNote . "\n");
 		// }
 		
-		// # get array of ids to help us build sql string query
+		// get array of ids to help us build sql string query
 		$edocIDs = [];
 		$mrnDict = [];
 		foreach ($edocInfo as $recordId => $record) {
 			$arr = current($record);	# we use current instead of having to determine the event ID
-			if ($mrnList['all'] or in_array((string) $arr['mrn'], $mrnList)) {
+			if (empty($mrnList) or in_array((string) $arr['mrn'], $mrnList)) {
 				if ($arr['alarm_file']) {
 					$edocIDs[] = $arr['alarm_file'];
 					$mrnDict[$arr['alarm_file']] = $arr['mrn'];
@@ -88,12 +83,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			}
 		}
 		
-		// # create zip file, open it
-		// $zip = new \ZipArchive();
-		// $fullpath = tempnam(EDOC_PATH,"");
-		// $zip->open($fullpath, \ZipArchive::CREATE);
-		
-		// # query redcap_edocs_metadata to get file names/paths to add to zip
+		// query redcap_edocs_metadata to get file names/paths to add to zip
 		$sql = "SELECT * FROM redcap_edocs_metadata WHERE project_id=$pid and doc_id in (" . implode(", ", $edocIDs) . ")";
 		$query = db_query($sql);
 		$edocPaths = [];
@@ -101,9 +91,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			$edocPaths[] = EDOC_PATH . $row['stored_name'];
 		}
 		
-		# if empty zip, say no files found
-		if ($zip->numFiles == 0) {
-			if ($mrnList['all']) {
+		// if empty zip, say no files found
+		if (empty($edocPaths)) {
+			if (empty($mrnList)) {
 				exit("<pre>The NVDC module couldn't find any alarm, logbook, or trends files attached to records in this project.</pre>");
 			} else {
 				echo "<pre>";
@@ -123,6 +113,13 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			}
 		}
 		
+		// # create zip file, open it
+		// $zip = new \ZipArchive();
+		// $fullpath = tempnam(EDOC_PATH,"");
+		// $zip->open($fullpath, \ZipArchive::CREATE);
+		
+		
+		
 		$zipFileName = "NICU_Ventilator_Data_Files.zip";
 		header('Content-Type: application/octet-stream');
 		header('Content-Description: File Transfer');
@@ -133,6 +130,24 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		// printMem("after zip unlink");
 		
 		// exit("</pre>");
+	}
+	
+	public function printMakeZipReport($message) {
+		$html = file_get_contents($this->getUrl("html" . DIRECTORY_SEPARATOR . "base.html"));
+		$html = str_replace("STYLESHEET_FILEPATH", $this->getUrl("css" . DIRECTORY_SEPARATOR . "attachStyles.css"), $html);
+		$html = str_replace("JS_FILEPATH", $this->getUrl("js" . DIRECTORY_SEPARATOR . "nvdc.js"), $html);
+		$html = str_replace("{TITLE}", "Get Files By MRN", $html);
+		$body = "<div class='container'>
+			<div class='row justify-content-center pt-5 pb-3'>
+				<h3>Get Files By MRN</h3>
+			</div>
+			<div class='row justify-content-center'>
+				<p>$message</p>
+			</div>
+		</div>";
+		$html = str_replace("{BODY}", $body, $html);
+		
+		return $html;
 	}
 	
 	public function handleZip() {
@@ -272,7 +287,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 				<h3>Get Files By MRN</h3>
 			</div>
 			<div class='row justify-content-center'>
-				<p>Enter one MRN or a list of comma-separated MRNs to get files for.</p>
+				<p>Enter a comma-separated list of MRNs to get files for those patients.</p>
 			</div>
 			<form method='post'>
 				<div class='form-group'>
@@ -395,7 +410,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		return $html;
 	}
 	
-	public function removeAttachedFiles() {
+	private function removeAttachedFiles() {
 		$pid = $this->getProjectId();
 		$q1 = db_query("SELECT * FROM redcap_data
 						INNER JOIN redcap_edocs_metadata ON redcap_data.value=redcap_edocs_metadata.doc_id
@@ -417,7 +432,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		echo "Removed $countDocDeleted documents and $countFieldDeleted field entries.";
 	}
 	
-	public function printRandomPage() {
+	private function printRandomPage() {
 		$str = "";
 		$domain = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
 		$length = strlen($domain);
@@ -430,7 +445,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		return $str;
 	}
 	
-	public function attachFakeFiles() {
+	private function attachFakeFiles() {
 		$pid = $this->getProjectId();
 		$eid = $this->getFirstEventId();
 		$sqlValues1 = [];

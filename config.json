@@ -22,11 +22,6 @@
         "url": "getProjectFiles.php"
       },
       {
-        "name": "Get Files by MRN",
-        "icon": "user_info3",
-        "url": "getFilesByMRN.php"
-      },
-      {
         "name": "Attach Ventilator Data Files",
         "icon": "attach",
         "url": "attachVentilatorFiles.php"
