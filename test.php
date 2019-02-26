@@ -11,52 +11,17 @@
 // Logbook ASCN-0001 25-Feb-2019 16_06_02.txt
 // Trends ASCN-0001 25-Feb-2019 16_06_02.txt
 
-
-// header('Content-Type: application/octet-stream');
-// header('Content-Disposition: attachment; filename=arch.zip');
-// $fpaths = [
-	// EDOC_PATH . "20181205095556_pid1158_nIwRKc.txt",
-	// EDOC_PATH . "20181205095556_pid1158_J7e8vU.txt"
-// ];
-// $fp = popen("zip -r - " . implode(' ', $fpaths), 'r');
-// $bufferSize = 8192;
-// $buffer = '';
-// while (!feof($fp)) {
-	// $buffer = fread($fp, $bufferSize);
-	// echo $buffer;
-// }
-// pclose($fp);
-
-// make sure to send all headers first
-
-// use popen to execute a unix command pipeline
-// and grab the stdout as a php stream
-error_reporting(E_ALL);
-$fpath1 = EDOC_PATH . "20181205095556_pid1158_nIwRKc.txt";
-$desc = [
-	0 => ['pipe', 'r'],
-	// 1 => ['pipe', 'r'],
-	2 => ['file', 'err.txt', 'a']
-];
-$fp = popen("zip ~/www/redcap/modules/nvdc_v1.0/file.zip ~/www/redcap/modules/nvdc_v1.0/test.php", 'r');
-echo "'\$fp': " . gettype($fp) . "<br />";
-// echo "'\$pipes': " . gettype($pipes) . "<br />";
-// echo "\$pipes[0]:" .  stream_get_contents($pipes[0]) . "<br />";
-echo "php://stderr:" .  file_get_contents("php://stderr");
-pclose($fp);
-exit();
-
-if (!$fp) {
-	exit('error');
-}
-
-// pick a bufsize that makes you happy (8192 has been suggested).
-header('Content-Type: application/octet-stream');
-header('Content-disposition: attachment; filename="file.zip"');
-$bufsize = 8192;
-$buff = '';
-while( !feof($fp) ) {
-   $buff = fread($fp, $bufsize);
-   echo $buff;
-}
-pclose($fp);
+$descriptorspec = array(
+    0 => array("pipe", "r"),
+    1 => array("pipe", "w"),
+    2 => array("file", "err.txt", "a")
+);
+// Create child and start process
+$child = array("process" => null, "pipes" => null);
+$child["process"] = proc_open("zip test.zip test.php", $descriptorspec, $child["pipes"]);
+echo(stream_get_contents($child['pipes'][0]) . "<br />");
+echo(stream_get_contents($child['pipes'][1]) . "<br />");
+echo(file_get_contents("err.txt") . "<br />");
+echo(gettype($child['process']) . "<br />");
+echo(gettype($child['pipes']) . "<br />");
+exit;
