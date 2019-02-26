@@ -57,7 +57,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	}
 	
 	public function downloadFiles($mrnList = ['all' => true]) {
+		apache_setenv('no-gzip', 1);
 		ini_set('memory_limit', '3072M');
+		ini_set('zlib.output_compression', 0);
 		// # downloadFiles will send the user a .zip of all the alarm, log, and trends file for their NICU Ventilator Data project
 		// # optionally, supply a $mrnList to filter to only those MRNs
 		$pid = $this->getProjectId();
