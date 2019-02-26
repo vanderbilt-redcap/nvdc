@@ -27,6 +27,10 @@ header('Content-disposition: attachment; filename="file.zip"');
 $fname = $module->getModulePath() . "test.php";
 $fp = popen("zip -r - $fname", 'r');
 
+var_dump($fp);
+pclose($fp);
+exit();
+
 // pick a bufsize that makes you happy (8192 has been suggested).
 $bufsize = 8192;
 $buff = '';
