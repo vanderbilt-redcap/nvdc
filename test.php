@@ -13,7 +13,6 @@
 
 
 header('Content-Type: application/octet-stream');
-header('Content-Description: File Transfer');
 header('Content-Disposition: attachment; filename=arch.zip');
 $fpaths = [
 	EDOC_PATH . "20181205095556_pid1158_nIwRKc.txt",
