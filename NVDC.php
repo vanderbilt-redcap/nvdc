@@ -63,11 +63,11 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		$filterLogic = "isnumber([alarm_file]) or isnumber([log_file]) or isnumber([trends_file])";
 		$edocInfo = \REDCap::getData($pid, 'array', NULL, array('mrn', 'alarm_file', 'log_file', 'trends_file'), NULL, NULL, NULL, NULL, NULL, $filterLogic);
 		
-		// // diagnostics
-		// echo "<pre>";
-		// print_r($thisMRNs);
-		// echo "</pre>";
-		// exit;
+		function printMem($sectionNote) {
+			// echo("(peak/usage): (" . round(memory_get_peak_usage()/1024/1024, 0) . 'MB/' . round(memory_get_usage()/1024/1024, 0) . "MB)\t" . $sectionNote . "\n");
+		}
+		// echo("<pre>");
+		printMem("after getting MRNs");
 		
 		// # get array of ids to help us build sql string query
 		$edocIDs = [];
@@ -88,6 +88,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 					$mrnDict[$arr['trends_file']] = $arr['mrn'];
 				}
 			}
+			if ($recordId < 11) {
+				printMem("after getting edocIDs for record $recordId");
+			}
 		}
 		
 		// # create zip file, open it
@@ -95,16 +98,23 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		$fullpath = tempnam(EDOC_PATH,"");
 		$zip->open($fullpath, \ZipArchive::CREATE);
 		
+		printMem("created ziparchive");
+		
 		// # query redcap_edocs_metadata to get file names/paths to add to zip
 		$sql = "SELECT * FROM redcap_edocs_metadata WHERE project_id=$pid and doc_id in (" . implode(", ", $edocIDs) . ")";
 		$query = db_query($sql);
 		
+		printMem("sql query result returned");
+		
+		$i = 0;
 		while($row = db_fetch_assoc($query)) {
-			$edoc = file_get_contents(EDOC_PATH . $row['stored_name']);
-			if (strlen($edoc) > 0) {
-				$zip->addFromString($mrnDict[$row['doc_id']] . " " . $row['doc_name'], $edoc);
+			$i++;
+			$zip->addFile(EDOC_PATH . $row['stored_name']);
+			if ($i < 11) {
+				printMem("added edoc $i");
 			}
 		}
+		$i = 0;
 		
 		// # if empty zip, say no files found
 		if ($zip->numFiles == 0) {
@@ -132,6 +142,8 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			}
 		}
 		
+		printMem("before zip close");
+		
 		// # close and send!
 		$zip->close();
 		$zipFileName = "NICU_Ventilator_Data_Files.zip";
@@ -139,6 +151,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		header('Content-type: application/zip');
 		readfile($fullpath);
 		unlink($fullpath);
+		// printMem("after zip unlink");
+		
+		// exit("</pre>");
 	}
 	
 	public function handleZip() {
