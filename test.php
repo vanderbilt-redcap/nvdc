@@ -45,14 +45,14 @@
 
 error_reporting(E_ALL);
 $modPath = $module->getModulePath();
-$command = "zzip -r - $modPath" . "test.php";
-exit(file_get_contents("$modPath" . "test.php"));
+$command = "zip - $modPath" . "test.php";
 $spec = [
 	0 => ["pipe", 'r'],
 	1 => ["pipe", 'w'],
 	2 => ["file", $modPath . "err.txt", 'a']
 ];
-$process = proc_open($command, $spec, $pipes);
+// $process = proc_open($command, $spec, $pipes);
+$process = proc_open("pwd", $spec, $pipes);
 if (is_resource($process)) {
 	echo('yes');
 	echo("<br />");
