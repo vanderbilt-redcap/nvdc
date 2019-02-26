@@ -31,8 +31,14 @@
 
 // use popen to execute a unix command pipeline
 // and grab the stdout as a php stream
+error_reporting(E_ALL);
 $fpath1 = EDOC_PATH . "20181205095556_pid1158_nIwRKc.txt";
-$fp = popen("zip -r - $fpath1", 'r');
+$fp = popen("zip -r - $fpath1 2>&1", 'r');
+echo "'$fp'; " . gettype($fp) . "\n";
+$read = fread($fp, 8192);
+echo $read;
+pclose($fp);
+exit();
 
 if (!$fp) {
 	exit('error');
