@@ -38,12 +38,12 @@ $desc = [
 	// 1 => ['pipe', 'r'],
 	2 => ['file', 'err.txt', 'a']
 ];
-$fp = proc_open("zip file.zip ~/www/redcap/modules/nvdc_v1.0/test.php", $desc, $pipes);
+$fp = popen("zip ~/www/redcap/modules/nvdc_v1.0/file.zip ~/www/redcap/modules/nvdc_v1.0/test.php", 'r');
 echo "'\$fp': " . gettype($fp) . "<br />";
-echo "'\$pipes': " . gettype($pipes) . "<br />";
-echo "\$pipes[0]:" .  stream_get_contents($pipes[0]) . "<br />";
+// echo "'\$pipes': " . gettype($pipes) . "<br />";
+// echo "\$pipes[0]:" .  stream_get_contents($pipes[0]) . "<br />";
 echo "php://stderr:" .  file_get_contents("php://stderr");
-fclose($pipes[0]);
+pclose($fp);
 exit();
 
 if (!$fp) {
