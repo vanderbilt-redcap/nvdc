@@ -52,12 +52,15 @@ $spec = [
 	2 => ["file", $modPath . "err.txt", 'a']
 ];
 $process = proc_open($command, $spec, $pipes);
-var_dump($process);
-echo "<br />";
-echo gettype($process);
-exit();
-header('Content-Type: application/octet-stream');
-// header('Content-Description: File Transfer');
-header('Content-Disposition: attachment; filename=NICU_Ventilator_Data_Files.zip');
-echo stream_get_contents($pipes[1]);
+if (is_resource($process)) {
+	exit('yes');
+} else {
+	exit('no');
+}
 proc_close($process);
+exit();
+// header('Content-Type: application/octet-stream');
+// header('Content-Description: File Transfer');
+// header('Content-Disposition: attachment; filename=NICU_Ventilator_Data_Files.zip');
+// echo stream_get_contents($pipes[1]);
+// proc_close($process);
