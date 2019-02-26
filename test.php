@@ -12,17 +12,35 @@
 // Trends ASCN-0001 25-Feb-2019 16_06_02.txt
 
 
+// header('Content-Type: application/octet-stream');
+// header('Content-Disposition: attachment; filename=arch.zip');
+// $fpaths = [
+	// EDOC_PATH . "20181205095556_pid1158_nIwRKc.txt",
+	// EDOC_PATH . "20181205095556_pid1158_J7e8vU.txt"
+// ];
+// $fp = popen("zip -r - " . implode(' ', $fpaths), 'r');
+// $bufferSize = 8192;
+// $buffer = '';
+// while (!feof($fp)) {
+	// $buffer = fread($fp, $bufferSize);
+	// echo $buffer;
+// }
+// pclose($fp);
+
+// make sure to send all headers first
 header('Content-Type: application/octet-stream');
-header('Content-Disposition: attachment; filename=arch.zip');
-$fpaths = [
-	EDOC_PATH . "20181205095556_pid1158_nIwRKc.txt",
-	EDOC_PATH . "20181205095556_pid1158_J7e8vU.txt"
-];
-$fp = popen("zip -r - " . implode(' ', $fpaths), 'r');
-$bufferSize = 8192;
-$buffer = '';
-while (!feof($fp)) {
-	$buffer = fread($fp, $bufferSize);
-	echo $buffer;
+header('Content-disposition: attachment; filename="file.zip"');
+
+// use popen to execute a unix command pipeline
+// and grab the stdout as a php stream
+$fpath1 = EDOC_PATH . "20181205095556_pid1158_nIwRKc.txt";
+$fp = popen("zip -r - $fpath1", 'r');
+
+// pick a bufsize that makes you happy (8192 has been suggested).
+$bufsize = 8192;
+$buff = '';
+while( !feof($fp) ) {
+   $buff = fread($fp, $bufsize);
+   echo $buff;
 }
 pclose($fp);
