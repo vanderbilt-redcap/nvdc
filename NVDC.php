@@ -57,9 +57,6 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	}
 	
 	public function downloadFiles($mrnList = ['all' => true]) {
-		apache_setenv('no-gzip', 1);
-		ini_set('memory_limit', '3072M');
-		ini_set('zlib.output_compression', 0);
 		// # downloadFiles will send the user a .zip of all the alarm, log, and trends file for their NICU Ventilator Data project
 		// # optionally, supply a $mrnList to filter to only those MRNs
 		$pid = $this->getProjectId();
@@ -69,8 +66,6 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		// function printMem($sectionNote) {
 			// echo("(peak/usage): (" . round(memory_get_peak_usage()/1024/1024, 0) . 'MB/' . round(memory_get_usage()/1024/1024, 0) . "MB)\t" . $sectionNote . "\n");
 		// }
-		// echo("<pre>");
-		// printMem("after getting MRNs");
 		
 		// # get array of ids to help us build sql string query
 		$edocIDs = [];
@@ -91,40 +86,25 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 					$mrnDict[$arr['trends_file']] = $arr['mrn'];
 				}
 			}
-			if ($recordId < 11) {
-				// printMem("after getting edocIDs for record $recordId");
-			}
 		}
 		
 		// # create zip file, open it
-		// ob_end_flush();
-		$zip = new \ZipArchive();
-		$fullpath = tempnam(EDOC_PATH,"");
-		$zip->open($fullpath, \ZipArchive::CREATE);
-		
-		// printMem("created ziparchive");
+		// $zip = new \ZipArchive();
+		// $fullpath = tempnam(EDOC_PATH,"");
+		// $zip->open($fullpath, \ZipArchive::CREATE);
 		
 		// # query redcap_edocs_metadata to get file names/paths to add to zip
 		$sql = "SELECT * FROM redcap_edocs_metadata WHERE project_id=$pid and doc_id in (" . implode(", ", $edocIDs) . ")";
 		$query = db_query($sql);
-		
-		// printMem("sql query result returned");
-		
-		$i = 0;
+		$edocPaths = [];
 		while($row = db_fetch_assoc($query)) {
-			$i++;
-			$zip->addFile(EDOC_PATH . $row['stored_name']);
-			if ($i < 11) {
-				// printMem("added edoc $i");
-			}
+			$edocPaths[] = EDOC_PATH . $row['stored_name'];
 		}
-		$i = 0;
 		
-		// # if empty zip, say no files found
+		# if empty zip, say no files found
 		if ($zip->numFiles == 0) {
 			if ($mrnList['all']) {
-				echo "<pre>The NVDC module couldn't find any alarm, logbook, or trends files attached to records in this project.</pre>";
-				exit;
+				exit("<pre>The NVDC module couldn't find any alarm, logbook, or trends files attached to records in this project.</pre>");
 			} else {
 				echo "<pre>";
 				echo "The NVDC module couldn't find any alarm, logbook, or trends files attached to records in this project for the specified MRNs:\n";
@@ -133,10 +113,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 						echo "$mrn\n";
 					}
 				}
-				echo "</pre>";
-				$zip->close();
-				unlink($fullpath);
-				exit;
+				exit("</pre>");
 			}
 		} else {
 			if ($mrnList['all']) {
@@ -146,21 +123,11 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			}
 		}
 		
-		// printMem("before zip close");
-		
-		// # close and send!
-		$zip->close();
 		$zipFileName = "NICU_Ventilator_Data_Files.zip";
-		header('Content-Type: application/zip');
+		header('Content-Type: application/octet-stream');
 		header('Content-Description: File Transfer');
 		header('Content-Disposition: attachment; filename='.$zipFileName);
-		header('Content-Transfer-Encoding: binary');
-		header('Expires: 0');
-		header('Cache-Control: must-revalidate');
-		header('Pragma: public');
-		header('Content-Length: ' . filesize($fullpath));
-		ob_clean();
-		flush();
+		// $fp = popen('tar cf - file1 ');
 		readfile($fullpath);
 		unlink($fullpath);
 		// printMem("after zip unlink");
