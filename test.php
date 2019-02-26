@@ -1,5 +1,7 @@
 <?
 $fname = $module->getModulePath() . "test.php";
+header("Content-Type: application/zip");
+header("Content-Disposition: attachment; filename=\"test.zip\"");
 $fp = popen("zip - $fname");
 echo fpassthru($fp);
 fclose($fp);
