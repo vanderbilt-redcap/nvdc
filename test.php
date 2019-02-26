@@ -1,17 +1,19 @@
 <?
 // $fname = $module->getModulePath() . "test.php";
 $fp = popen("zip - /app001/www/redcap/modules/nvdc_v1.0/test.php", 'r');
-// if (is_resource($fp)) {
+if (is_resource($fp)) {
 	header("Content-Type: application/zip");
 	header("Content-Disposition: attachment; filename=\"test.zip\"");
 	echo fpassthru($fp);
 	fclose($fp);
 	exit();
-// } else {
-	// var_dump($fp);
-	// echo "<br />";
-	
-// }
+} else {
+	var_dump($fp);
+	echo "<br />";
+	echo "not a resource";
+	echo "<br />";
+	echo fclose($fp);
+}
 
 // $module->removeAttachedFiles();
 // $module->attachFakeFiles();
