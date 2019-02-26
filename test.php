@@ -46,6 +46,7 @@
 error_reporting(E_ALL);
 $modPath = $module->getModulePath();
 $command = "zzip -r - $modPath" . "test.php";
+exit($command);
 $spec = [
 	0 => ["pipe", 'r'],
 	1 => ["pipe", 'w'],
