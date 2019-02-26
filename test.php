@@ -1,8 +1,20 @@
 <?
 
-if (function_exists('exec')) echo "exec is enabled<br />";
-if (function_exists('popen')) echo "popen is enabled<br />";
-if (function_exists('proc_open')) echo "proc_open is enabled<br />";
+if (function_exists('exec')) {
+	echo "exec is enabled<br />";
+} else {
+	echo "exec is not enabled<br />";
+}
+if (function_exists('popen'))  {
+	echo "popen is enabled<br />";
+} else {
+	echo "popen is not enabled<br />";
+}
+if (function_exists('proc_open'))  {
+	echo "proc_open is enabled<br />";
+} else {
+	echo "proc_open is not enabled<br />";
+}
 exit();
 
 // $fname = $module->getModulePath() . "test.php";
