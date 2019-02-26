@@ -44,15 +44,18 @@
 // echo("\$returnVal: " . print_r($returnVal, true));
 
 error_reporting(E_ALL);
-$modPath = "~/www/redcap/modules/nvdc_v1.0/";
-exit(file_get_contents($module->getUrl("test.php"));
-$command = "zip -r - ~/www/redcap/modules/nvdc_v1.0/test.php";
+$modPath = $module->getModulePath();
+$command = "zip -r - $modPath" . "test.php";
 $spec = [
 	0 => ["pipe", 'r'],
 	1 => ["pipe", 'w'],
 	2 => ["file", $modPath . "err.txt", 'a']
 ];
 $process = proc_open($command, $spec, $pipes);
+var_dump($process);
+echo "<br />";
+echo gettype($process);
+exit();
 header('Content-Type: application/octet-stream');
 // header('Content-Description: File Transfer');
 header('Content-Disposition: attachment; filename=NICU_Ventilator_Data_Files.zip');
