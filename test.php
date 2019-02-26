@@ -45,7 +45,8 @@
 
 error_reporting(E_ALL);
 $modPath = "~/www/redcap/modules/nvdc_v1.0/";
-$command = "zip -r - $modPath" . "test.php";
+exit(file_get_contents("~/www/redcap/modules/nvdc_v1.0/test.php"));
+$command = "zip -r - ~/www/redcap/modules/nvdc_v1.0/test.php";
 $spec = [
 	0 => ["pipe", 'r'],
 	1 => ["pipe", 'w'],
