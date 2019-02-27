@@ -51,16 +51,24 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		}
 	}
 	
-	public function makeZip($mrnList) {
+	public function getBaseHtml() {
+		# get base HTML and substitute file paths to css and js files
+		$html = file_get_contents($this->getUrl("html/base.html"));
+		$html = str_replace("{STYLESHEET}", $this->getUrl("css/base.css"), $html);
+		$html = str_replace("{JAVASCRIPT}", $this->getUrl("js/base.js"), $html);
+		$html = str_replace("{TITLE}", "Get Project Files", $html);
+		return $html;
+	}
+	
+	public function makeZip($mrnList, $zipFilePath) {
 		// downloadFiles will send the user a .zip of all the alarm, log, and trends file for their NICU Ventilator Data project
 		// optionally, supply a $mrnList to filter to only those MRNs
+		set_time_limit(0);
+		ini_set('memory_limit', '3G');
+		if (file_exists($this->getModulePath() . "NVDC_attached_files.zip")) unlink($this->getModulePath() . "NVDC_attached_files.zip");
 		$pid = $this->getProjectId();
 		$filterLogic = "isnumber([alarm_file]) or isnumber([log_file]) or isnumber([trends_file])";
 		$edocInfo = \REDCap::getData($pid, 'array', NULL, array('mrn', 'alarm_file', 'log_file', 'trends_file'), NULL, NULL, NULL, NULL, NULL, $filterLogic);
-		
-		// function printMem($sectionNote) {
-			// echo("(peak/usage): (" . round(memory_get_peak_usage()/1024/1024, 0) . 'MB/' . round(memory_get_usage()/1024/1024, 0) . "MB)\t" . $sectionNote . "\n");
-		// }
 		
 		// get array of ids to help us build sql string query
 		$edocIDs = [];
@@ -113,23 +121,14 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			}
 		}
 		
-		// # create zip file, open it
-		// $zip = new \ZipArchive();
-		// $fullpath = tempnam(EDOC_PATH,"");
-		// $zip->open($fullpath, \ZipArchive::CREATE);
-		
-		
-		
-		$zipFileName = "NICU_Ventilator_Data_Files.zip";
-		header('Content-Type: application/octet-stream');
-		header('Content-Description: File Transfer');
-		header('Content-Disposition: attachment; filename='.$zipFileName);
-		// $fp = popen('tar cf - file1 ');
-		readfile($fullpath);
-		unlink($fullpath);
-		// printMem("after zip unlink");
-		
-		// exit("</pre>");
+		// create zip file, open it
+		$zip = new \ZipArchive();
+		$zip->open($zipFilePath, \ZipArchive::CREATE);
+		foreach ($edocPaths as $docPath) {
+			$zip->addFile($docPath);
+		}
+		$zip->close();
+		rename($zipFilePath, $this->getModulePath() . "NVDC_attached_files.zip");
 	}
 	
 	public function printMakeZipReport($message) {
@@ -278,26 +277,24 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	}
 	
 	public function printMRNForm() {
-		$html = file_get_contents($this->getUrl("html" . DIRECTORY_SEPARATOR . "base.html"));
-		$html = str_replace("STYLESHEET_FILEPATH", $this->getUrl("css" . DIRECTORY_SEPARATOR . "attachStyles.css"), $html);
-		$html = str_replace("JS_FILEPATH", $this->getUrl("js" . DIRECTORY_SEPARATOR . "nvdc.js"), $html);
-		$html = str_replace("{TITLE}", "Get Files By MRN", $html);
+		$html = $this->getBaseHtml();
 		$body = "<div class='container'>
 			<div class='row justify-content-center pt-5 pb-3'>
 				<h3>Get Files By MRN</h3>
 			</div>
 			<div class='row justify-content-center'>
-				<p>Enter a comma-separated list of MRNs to get files for those patients.</p>
+				<p id='note'>Enter a comma-separated list of MRNs to get files for those patients.</p>
 			</div>
-			<form method='post'>
+			<form>
 				<div class='form-group'>
 					<label for='mrnList'>MRN(s)</label>
 					<input type='text' class='form-control mb-2' name='mrnList' aria-describedby='mrnHelp' placeholder='012345678, 123456789'>
 				</div>
 				<div>
-					<button type='submit' class='btn btn-primary'>Submit</button>
+					<button type='button' class='btn btn-primary' onclick='NVDC.requestZip()'>Submit</button>
 				</div>
 			</form>
+			<div id='result'></div>
 		</div>";
 		$html = str_replace("{BODY}", $body, $html);
 		
