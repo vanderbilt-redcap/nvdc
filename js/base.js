@@ -11,13 +11,14 @@ NVDC.requestZip = function() {
 		url: window.location.href,
 		data: {"mrnList": mrns},
 		dataType: 'json',
+		timeout: (1000 * 60 * 15),	// 15 minute timeout
 		beforeSend: function (request, settings) {
 			$("button").prop('disabled', true);
 			$("#loader").fadeIn(200, NVDC.checkForZip);
 			$("#noteHolder").empty().append("<span id='userNote'>Preparing download of attached files from records of given MRNs...</span>");
 		},
 		complete: function(response) {
-			console.log(response);
+			// console.log(response);
 			data = JSON.parse(response.responseText);
 			if (data.download == true) {
 				// nothing
@@ -38,7 +39,8 @@ NVDC.checkForZip = function() {
 		url: window.location.href,
 		data: {"checkForZip": true},
 		complete: function(response) {
-			if (response.responseText == 'true') {
+			data = JSON.parse(response.responseText);
+			if (data.) {
 				$("#loader").fadeOut(200, function() {
 					$("button").prop('disabled', false);
 					let dlAddress = window.location.href.replace('getProjectFiles', 'getZip');

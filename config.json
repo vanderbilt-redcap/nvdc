@@ -17,11 +17,6 @@
   "links": {
     "project": [
       {
-        "name": "Get Project Files",
-        "icon": "archive_icon",
-        "url": "getProjectFiles.php"
-      },
-      {
         "name": "Attach Ventilator Data Files",
         "icon": "attach",
         "url": "attachVentilatorFiles.php"
