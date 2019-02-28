@@ -22,8 +22,12 @@ NVDC.requestZip = function() {
 				// nothing
 			} else if (typeof data.message !== "undefined") {
 				$("#noteHolder").empty().append("<span id='userNote'>" + data.message + "</span>");
+				$("button").prop('disabled', false);
+				$("#loader").fadeOut(100);
 			} else {
 				$("#noteHolder").empty().append("<span id='userNote'>An error occured on the server. Please reload and try again. If that fails, contact your REDCap Administrator.</span>");
+				$("button").prop('disabled', false);
+				$("#loader").fadeOut(100);
 			}
 		}
 	});
