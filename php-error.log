@@ -1,6 +1,17 @@
-[28-Feb-2019 21:16:00 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function getModulePath() on null in C:\xampp\htdocs\redcap\modules\nvdc_v1.0\NVDC.php:122
+[01-Mar-2019 00:25:59 Europe/Berlin] PHP Fatal error:  Uncaught Error: Cannot use object of type stdClass as array in C:\xampp\htdocs\redcap\modules\nvdc_v1.0\NVDC.php:125
 Stack trace:
-#0 C:\xampp\htdocs\redcap\modules\nvdc_v1.0\getProjectFiles.php(26): Vanderbilt\NVDC\NVDC->makeZip(Array)
+#0 C:\xampp\htdocs\redcap\modules\nvdc_v1.0\getProjectFiles.php(12): Vanderbilt\NVDC\NVDC->makeZip(Array)
 #1 C:\xampp\htdocs\redcap\redcap_v8.10.2\ExternalModules\index.php(90): require_once('C:\\xampp\\htdocs...')
 #2 {main}
-  thrown in C:\xampp\htdocs\redcap\modules\nvdc_v1.0\NVDC.php on line 122
+  thrown in C:\xampp\htdocs\redcap\modules\nvdc_v1.0\NVDC.php on line 125
+[01-Mar-2019 00:27:08 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to a member function getModulePath() on null in C:\xampp\htdocs\redcap\modules\nvdc_v1.0\NVDC.php:117
+Stack trace:
+#0 C:\xampp\htdocs\redcap\modules\nvdc_v1.0\getProjectFiles.php(12): Vanderbilt\NVDC\NVDC->makeZip(Array)
+#1 C:\xampp\htdocs\redcap\redcap_v8.10.2\ExternalModules\index.php(90): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+  thrown in C:\xampp\htdocs\redcap\modules\nvdc_v1.0\NVDC.php on line 117
+[01-Mar-2019 00:27:25 Europe/Berlin] PHP Fatal error:  Uncaught Error: Cannot use object of type stdClass as array in C:\xampp\htdocs\redcap\modules\nvdc_v1.0\getProjectFiles.php:17
+Stack trace:
+#0 C:\xampp\htdocs\redcap\redcap_v8.10.2\ExternalModules\index.php(90): require_once()
+#1 {main}
+  thrown in C:\xampp\htdocs\redcap\modules\nvdc_v1.0\getProjectFiles.php on line 17

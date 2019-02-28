@@ -52,11 +52,8 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	}
 	
 	public function checkForMRNs($mrnList) {
-		// check to see if we can make a zip given the user's mrnList
-		// if we can, send edocPaths array as return, else return error message
-		ini_set("log_errors", 1);
-		ini_set("error_log", $this->getModulePath() . "/php-error.log");
-		if ($mrnList[0] == "") $mrnList = [];
+		// check to see if we can make a zip given the user's mrnList, send string message
+		if ($mrnList[0] == "" or $mrnList[0] == null) $mrnList = [];
 		$pid = $this->getProjectId();
 		$filterLogic = "isnumber([alarm_file]) or isnumber([log_file]) or isnumber([trends_file])";
 		$edocInfo = \REDCap::getData($pid, 'array', NULL, array('mrn', 'alarm_file', 'log_file', 'trends_file'), NULL, NULL, NULL, NULL, NULL, $filterLogic);
@@ -82,26 +79,28 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			}
 		}
 		
-		if (empty($mrnDict)) return "The NVDC module couldn't find any matching MRNs in the project records.";
+		if (empty($mrnDict)) return json_encode(["message" => "The NVDC module couldn't find any matching MRNs in the project records."]);
 		
 		// query redcap_edocs_metadata to get file names/paths to add to zip
-		$sql = "SELECT * FROM redcap_edocs_metadata WHERE project_id=$pid and doc_id in (" . implode(", ", $edocIDs) . ")";
+		$sql = "SELECT doc_id, stored_name, doc_name FROM redcap_edocs_metadata WHERE project_id=$pid and doc_id in (" . implode(", ", $edocIDs) . ")";
 		$query = db_query($sql);
-		$edocPaths = [];
+		$edocs = [];
 		while($row = db_fetch_assoc($query)) {
-			$edocPaths[] = EDOC_PATH . $row['stored_name'];
+			$edocs[] = [
+				"filepath" => EDOC_PATH . $row['stored_name'],
+				"filename" => $row['doc_name'],
+				"mrn" => $mrnDict[$row['doc_id']]
+			];
 		}
 		
 		// if empty zip, say no files found
-		if (empty($edocPaths)) {
-			return "The NVDC module found matching MRNs in the project, but none that had attached Alarm, Trends, or Logbook files.";
+		if (empty($edocs)) {
+			return json_encode(["message" => "The NVDC module found matching MRNs in the project, but none that had attached Alarm, Trends, or Logbook files."]);
 		} else {
-			if (empty($mrnList)) {
-				\Logging::logEvent($sql, "redcap_data", "DATA_EXPORT", $targetRid, "User downloaded files for all MRNs", "");
-			} else {
-				\Logging::logEvent($sql, "redcap_data", "DATA_EXPORT", $targetRid, "User downloaded files for MRNs: " . implode(', ', $mrnList), "");
-			}
-			return $edocPaths;
+			return json_encode([
+				"message" => "Attached files found. Please wait while your download is being prepared.",
+				"edocs" => $edocs
+			]);
 		}
 	}
 	
@@ -114,20 +113,18 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		return $html;
 	}
 	
-	public function makeZip($edocPaths) {
+	public function makeZip($edocs) {
+		// file_put_contents($this->getModulePath() . "aaa.txt", gettype($edocs));
+		// return;
 		// create zip file, open it
-		ini_set("log_errors", 1);
-		ini_set("error_log", $this->getModulePath() . "/php-error.log");
 		ini_set('memory_limit', '3G');
-		set_time_limit(0);
-		$sidHash8 = substr(hash('md5', session_id()), 0, 8);
-		$zipName = "NVDC_Files_$sidHash8.zip";
-		$zipFilePath = $this->getModulePath() . "/userZips/$zipName";
+		set_time_limit(1000*60*15);
+		$zipFilePath = $this->getZipPath();
 		if (file_exists($zipFilePath)) unlink($zipFilePath);
 		$zip = new \ZipArchive();
 		$zip->open($zipFilePath, \ZipArchive::CREATE);
-		foreach ($edocPaths as $docPath) {
-			$zip->addFile($docPath);
+		foreach ($edocs as $edoc) {
+			$zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edoc['filename']);
 		}
 		$zip->close();
 	}
@@ -294,7 +291,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 					<input type='text' class='form-control mb-2' name='mrnList' aria-describedby='mrnHelp' placeholder='012345678, 123456789'>
 				</div>
 				<div>
-					<button type='button' class='btn btn-primary' onclick='NVDC.requestZip()'>Submit</button>
+					<button type='button' class='btn btn-primary' onclick='NVDC.sendMRNs()'>Submit</button>
 				</div>
 				<div id='noteHolder'></div>
 				<div id='loader'>
@@ -412,6 +409,13 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		
 		$html = str_replace("{BODY}", $body, $html);
 		return $html;
+	}
+	
+	private function getZipPath() {
+		$sidHash8 = substr(hash('md5', session_id()), 0, 8);
+		$zipName = "NVDC_Files_$sidHash8.zip";
+		$zipFilePath = $this->getModulePath() . "/userZips/$zipName";
+		return $zipFilePath;
 	}
 	
 	private function removeAttachedFiles() {
