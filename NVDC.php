@@ -51,21 +51,10 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		}
 	}
 	
-	public function getBaseHtml() {
-		# get base HTML and substitute file paths to css and js files
-		$html = file_get_contents($this->getUrl("html/base.html"));
-		$html = str_replace("{STYLESHEET}", $this->getUrl("css/base.css"), $html);
-		$html = str_replace("{JAVASCRIPT}", $this->getUrl("js/base.js"), $html);
-		$html = str_replace("{TITLE}", "Get Project Files", $html);
-		return $html;
-	}
-	
-	public function makeZip($mrnList, $zipFilePath) {
-		// downloadFiles will send the user a .zip of all the alarm, log, and trends file for their NICU Ventilator Data project
-		// optionally, supply a $mrnList to filter to only those MRNs
-		set_time_limit(0);
-		ini_set('memory_limit', '3G');
-		if (file_exists($this->getModulePath() . "NVDC_attached_files.zip")) unlink($this->getModulePath() . "NVDC_attached_files.zip");
+	public function checkForMRNs($mrnList) {
+		// check to see if we can make a zip given the user's mrnList
+		// if we can, send edocPaths array as return, else return error message
+		if ($mrnList[0] == "") $mrnList = [];
 		$pid = $this->getProjectId();
 		$filterLogic = "isnumber([alarm_file]) or isnumber([log_file]) or isnumber([trends_file])";
 		$edocInfo = \REDCap::getData($pid, 'array', NULL, array('mrn', 'alarm_file', 'log_file', 'trends_file'), NULL, NULL, NULL, NULL, NULL, $filterLogic);
@@ -91,6 +80,8 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			}
 		}
 		
+		if (empty($mrnDict)) return "The NVDC module couldn't find any matching MRNs in the project records.";
+		
 		// query redcap_edocs_metadata to get file names/paths to add to zip
 		$sql = "SELECT * FROM redcap_edocs_metadata WHERE project_id=$pid and doc_id in (" . implode(", ", $edocIDs) . ")";
 		$query = db_query($sql);
@@ -101,34 +92,42 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		
 		// if empty zip, say no files found
 		if (empty($edocPaths)) {
-			if (empty($mrnList)) {
-				exit("<pre>The NVDC module couldn't find any alarm, logbook, or trends files attached to records in this project.</pre>");
-			} else {
-				echo "<pre>";
-				echo "The NVDC module couldn't find any alarm, logbook, or trends files attached to records in this project for the specified MRNs:\n";
-				foreach ($mrnList as $key => $mrn) {
-					if (!$key=='all') {
-						echo "$mrn\n";
-					}
-				}
-				exit("</pre>");
-			}
+			return "The NVDC module found matching MRNs in the project, but none that had attached Alarm, Trends, or Logbook files.";
 		} else {
-			if ($mrnList['all']) {
+			if (empty($mrnList)) {
 				\Logging::logEvent($sql, "redcap_data", "DATA_EXPORT", $targetRid, "User downloaded files for all MRNs", "");
 			} else {
 				\Logging::logEvent($sql, "redcap_data", "DATA_EXPORT", $targetRid, "User downloaded files for MRNs: " . implode(', ', $mrnList), "");
 			}
+			return $edocPaths;
 		}
-		
+	}
+	
+	public function getBaseHtml() {
+		# get base HTML and substitute file paths to css and js files
+		$html = file_get_contents($this->getUrl("html/base.html"));
+		$html = str_replace("{STYLESHEET}", $this->getUrl("css/base.css"), $html);
+		$html = str_replace("{JAVASCRIPT}", $this->getUrl("js/base.js"), $html);
+		$html = str_replace("{TITLE}", "Get Project Files", $html);
+		return $html;
+	}
+	
+	public function makeZip($edocPaths) {
 		// create zip file, open it
+		ini_set("log_errors", 1);
+		ini_set("error_log", $this->getModulePath() . "/php-error.log");
+		ini_set('memory_limit', '3G');
+		set_time_limit(0);
+		$sidHash8 = substr(hash('md5', session_id()), 0, 8);
+		$zipName = "NVDC_Files_$sidHash8.zip";
+		$zipFilePath = $this->getModulePath() . "/userZips/$zipName";
+		if (file_exists($zipFilePath)) unlink($zipFilePath);
 		$zip = new \ZipArchive();
 		$zip->open($zipFilePath, \ZipArchive::CREATE);
 		foreach ($edocPaths as $docPath) {
 			$zip->addFile($docPath);
 		}
 		$zip->close();
-		rename($zipFilePath, $this->getModulePath() . "NVDC_attached_files.zip");
 	}
 	
 	public function printMakeZipReport($message) {
@@ -280,10 +279,12 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		$html = $this->getBaseHtml();
 		$body = "<div class='container'>
 			<div class='row justify-content-center pt-5 pb-3'>
-				<h3>Get Files By MRN</h3>
+				<h3>Get Project Files</h3>
 			</div>
 			<div class='row justify-content-center'>
 				<p id='note'>Enter a comma-separated list of MRNs to get files for those patients.</p>
+				<br />
+				<p>Alternatively, submit an empty list to download all project files.</p>
 			</div>
 			<form>
 				<div class='form-group'>
@@ -292,6 +293,10 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 				</div>
 				<div>
 					<button type='button' class='btn btn-primary' onclick='NVDC.requestZip()'>Submit</button>
+				</div>
+				<div id='noteHolder'></div>
+				<div id='loader'>
+					<div class='spinner'></div>
 				</div>
 			</form>
 			<div id='result'></div>

@@ -2,34 +2,42 @@
 if (isset($_POST['mrnList'])) {
 	// generate a temporary filename for the zip file we're about to make for user and send to client
     ob_start();
-	$zipName = tempnam(EDOC_PATH,"");
-    echo("ok");
-    $size = ob_get_length();
-    header("Content-Encoding: none");
-    header("Content-Length: {$size}");
-    header("Connection: close");
-    ob_end_flush();
-    ob_flush();
-    flush();
-    if(session_id()) session_write_close();
 	
+	// see if we will be able to generate a zip from the given mrns
+	// if so, send ok, otherwise send error message
+	$ret = $module->checkForMRNs($_POST['mrnList']);
+	if (gettype($ret) == 'string') {
+		$arr = ['download' => false, 'message' => $ret];
+	} else {
+		$arr = ['download' => true];
+	}
+	$response = json_encode($arr);
+	
+	//----------------------------------------------------------------------------------------------------
+	// unfortunately, the commented out lines don't work to end an ajax request early
+	
+	// ob_end_clean();
+	// header("Connection: close");
+	// ignore_user_abort(true);
+	// ob_start();
+	echo($response);
+	// $size = ob_get_length();
+	// header("Content-Length: $size");
+	// ob_end_flush();
+	// flush();
+	
+	//----------------------------------------------------------------------------------------------------
 	// now we start the process of actually creating the file
-	$result = $module->makeZip($_POST['mrnList'], $zipName);
+	if (gettype($ret) != "string") $module->makeZip($ret);
 } elseif($_POST['checkForZip']) {
-	$zipPath = $this->getModulePath() . "NVDC_attached_files.zip";
-	if (file_exists($zipPath)) {
+	$sidHash8 = substr(hash('md5', session_id()), 0, 8);
+	$zipName = "NVDC_Files_$sidHash8.zip";
+	$zipFilePath = $module->getModulePath() . "/userZips/$zipName";
+	if (file_exists($zipFilePath)) {
 		exit('true');
 	} else {
 		exit('false');
 	}
-} elseif($_POST['getZip']) {
-	$zipPath = $this->getModulePath() . "NVDC_attached_files.zip";
-	header('Content-Type: application/zip');
-	header('Content-Description: File Transfer');
-	header('Content-Disposition: attachment; filename="NICU_Ventilator_Data_Files.zip"');
-	header('Content-length: ' . filesize($zipPath));
-	readfile($zipPath);
-	unlink($zipPath);
 } else {
 	echo $module->printMRNForm();
 }
