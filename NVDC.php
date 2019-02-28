@@ -54,6 +54,8 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	public function checkForMRNs($mrnList) {
 		// check to see if we can make a zip given the user's mrnList
 		// if we can, send edocPaths array as return, else return error message
+		ini_set("log_errors", 1);
+		ini_set("error_log", $this->getModulePath() . "/php-error.log");
 		if ($mrnList[0] == "") $mrnList = [];
 		$pid = $this->getProjectId();
 		$filterLogic = "isnumber([alarm_file]) or isnumber([log_file]) or isnumber([trends_file])";

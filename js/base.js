@@ -17,6 +17,7 @@ NVDC.requestZip = function() {
 			$("#noteHolder").empty().append("<span id='userNote'>Preparing download of attached files from records of given MRNs...</span>");
 		},
 		complete: function(response) {
+			console.log(response);
 			data = JSON.parse(response.responseText);
 			if (data.download == true) {
 				// nothing

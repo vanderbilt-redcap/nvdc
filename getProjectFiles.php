@@ -1,6 +1,8 @@
 <?php
 if (isset($_POST['mrnList'])) {
 	// generate a temporary filename for the zip file we're about to make for user and send to client
+	ini_set("log_errors", 1);
+	ini_set("error_log", $module->getModulePath() . "/php-error.log");
     ob_start();
 	
 	// see if we will be able to generate a zip from the given mrns
@@ -30,6 +32,8 @@ if (isset($_POST['mrnList'])) {
 	// now we start the process of actually creating the file
 	if (gettype($ret) != "string") $module->makeZip($ret);
 } elseif($_POST['checkForZip']) {
+	ini_set("log_errors", 1);
+	ini_set("error_log", $module->getModulePath() . "/php-error.log");
 	$sidHash8 = substr(hash('md5', session_id()), 0, 8);
 	$zipName = "NVDC_Files_$sidHash8.zip";
 	$zipFilePath = $module->getModulePath() . "/userZips/$zipName";
