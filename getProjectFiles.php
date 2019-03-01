@@ -6,9 +6,7 @@ if (isset($_POST['mrnList'])) {
     $message = $module->checkForMRNs($_POST['mrnList']);
 	exit($message);
 } elseif($_POST['makeZip']) {
-	// exit(json_encode(['done' => true]));
 	$edocs = json_decode($_POST['edocs'], true);
-	// file_put_contents($module->getModulePath() . "aaa.txt", print_r($edocs, true));
 	$module->makeZip($edocs);
 	
 	// log which mrns user downloaded files for046329804

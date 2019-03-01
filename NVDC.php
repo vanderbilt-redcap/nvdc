@@ -114,8 +114,6 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	}
 	
 	public function makeZip($edocs) {
-		// file_put_contents($this->getModulePath() . "aaa.txt", gettype($edocs));
-		// return;
 		// create zip file, open it
 		ini_set('memory_limit', '3G');
 		set_time_limit(1000*60*15);
@@ -418,7 +416,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		return $zipFilePath;
 	}
 	
-	private function removeAttachedFiles() {
+	public function removeAttachedFiles() {
 		$pid = $this->getProjectId();
 		$q1 = db_query("SELECT * FROM redcap_data
 						INNER JOIN redcap_edocs_metadata ON redcap_data.value=redcap_edocs_metadata.doc_id

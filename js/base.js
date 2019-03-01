@@ -17,7 +17,6 @@ NVDC.sendMRNs = function() {
 		complete: function(response) {
 			console.log(response);
 			data = JSON.parse(response.responseText);
-			// console.log(data.edocs);
 			if (typeof data.message !== "undefined") {
 				if (typeof data.edocs !== "undefined") {
 					// spin loader and ask server to make zip
@@ -37,8 +36,6 @@ NVDC.sendMRNs = function() {
 	});
 }
 NVDC.requestZip = function(edocs) {
-	console.log(JSON.stringify(edocs));
-	// return;
 	let jqxhr = $.post({
 		url: window.location.href,
 		data: {"makeZip": true, "edocs": JSON.stringify(edocs)},

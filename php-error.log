@@ -15,3 +15,9 @@ Stack trace:
 #0 C:\xampp\htdocs\redcap\redcap_v8.10.2\ExternalModules\index.php(90): require_once()
 #1 {main}
   thrown in C:\xampp\htdocs\redcap\modules\nvdc_v1.0\getProjectFiles.php on line 17
+[01-Mar-2019 00:43:50 Europe/Berlin] PHP Fatal error:  Uncaught Exception: The following method does not exist: removeAttachedFiles() in C:\xampp\htdocs\redcap\redcap_v8.10.2\ExternalModules\classes\AbstractExternalModule.php:1197
+Stack trace:
+#0 C:\xampp\htdocs\redcap\modules\nvdc_v1.0\getProjectFiles.php(4): ExternalModules\AbstractExternalModule->__call('removeAttachedF...', Array)
+#1 C:\xampp\htdocs\redcap\redcap_v8.10.2\ExternalModules\index.php(90): require_once('C:\\xampp\\htdocs...')
+#2 {main}
+  thrown in C:\xampp\htdocs\redcap\redcap_v8.10.2\ExternalModules\classes\AbstractExternalModule.php on line 1197
