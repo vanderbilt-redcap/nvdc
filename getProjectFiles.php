@@ -1,7 +1,6 @@
 <?php
 ini_set("log_errors", 1);
 ini_set("error_log", $module->getModulePath() . "/php-error.log");
-file_put_contents($module->getModulePath() . "bbb.txt", "x");
 if (isset($_POST['mrnList'])) {
     $message = $module->checkForMRNs($_POST['mrnList']);
 	exit($message);

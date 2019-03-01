@@ -115,7 +115,10 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		// create zip file, open it
 		ini_set('memory_limit', '3G');
 		set_time_limit(1000*60*15);
-		$zipFilePath = $this->getZipPath();
+		$sidHash8 = substr(hash('md5', session_id()), 0, 8);
+		$zipName = "NVDC_Files_$sidHash8.zip";
+		// $zipFilePath = $this->getModulePath() . "/userZips/$zipName";
+		$zipFilePath = EDOC_PATH . $zipName;
 		if (file_exists($zipFilePath)) unlink($zipFilePath);
 		$zip = new \ZipArchive();
 		$zip->open($zipFilePath, \ZipArchive::CREATE);
@@ -405,13 +408,6 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		
 		$html = str_replace("{BODY}", $body, $html);
 		return $html;
-	}
-	
-	private function getZipPath() {
-		$sidHash8 = substr(hash('md5', session_id()), 0, 8);
-		$zipName = "NVDC_Files_$sidHash8.zip";
-		$zipFilePath = $this->getModulePath() . "/userZips/$zipName";
-		return $zipFilePath;
 	}
 	
 	public function removeAttachedFiles() {
