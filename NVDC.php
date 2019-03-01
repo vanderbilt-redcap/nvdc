@@ -84,11 +84,13 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		$query = db_query($sql);
 		$edocs = [];
 		while($row = db_fetch_assoc($query)) {
-			$edocs[] = [
-				"filepath" => EDOC_PATH . $row['stored_name'],
-				"filename" => $row['doc_name'],
-				"mrn" => $mrnDict[$row['doc_id']]
-			];
+			if ($mrnDict[$row['doc_id']] != "") {		// must have mrn
+				$edocs[] = [
+					"filepath" => EDOC_PATH . $row['stored_name'],
+					"filename" => $row['doc_name'],
+					"mrn" => $mrnDict[$row['doc_id']]
+				];
+			}
 		}
 		
 		// send message to client-side
