@@ -79,8 +79,6 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			}
 		}
 		
-		if (empty($mrnDict)) return json_encode(["message" => "The NVDC module couldn't find any matching MRNs in the project records."]);
-		
 		// query redcap_edocs_metadata to get file names/paths to add to zip
 		$sql = "SELECT doc_id, stored_name, doc_name FROM redcap_edocs_metadata WHERE project_id=$pid and doc_id in (" . implode(", ", $edocIDs) . ")";
 		$query = db_query($sql);
@@ -93,9 +91,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			];
 		}
 		
-		// if empty zip, say no files found
+		// send message to client-side
 		if (empty($edocs)) {
-			return json_encode(["message" => "The NVDC module found matching MRNs in the project, but none that had attached Alarm, Trends, or Logbook files."]);
+			return json_encode(["message" => "The NVDC module couldn't find any attached files for the MRNs provided."]);
 		} else {
 			return json_encode([
 				"message" => "Attached files found. Please wait while your download is being prepared.",
