@@ -483,6 +483,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	}
 }
 function redcap_module_link_check_display($project_id, $link) {
+	return $link;
 	$projectUsers = \REDCap::getUsers();
 	$user = \ExternalModules::getUsername();
 	if (in_array($user, $projectUsers)) {
