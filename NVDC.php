@@ -51,9 +51,10 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		}
 	}
 	
-	function __construct() {
+	public function __construct() {
+		parent::__construct();
 		$projectUsers = \REDCap::getUsers();
-		$module->allowUsers($projectUsers);
+		\REDCap::allowUsers($projectUsers);
 	}
 	
 	public function checkForMRNs($mrnList) {

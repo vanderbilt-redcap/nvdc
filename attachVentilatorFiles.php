@@ -1,4 +1,6 @@
 <?php
+		$projectUsers = \REDCap::getUsers();
+		\REDCap::allowUsers($projectUsers);
 if (empty($_FILES)) {
 	echo $module->printUploadForm();
 } else {
