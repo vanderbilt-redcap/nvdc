@@ -51,6 +51,11 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		}
 	}
 	
+	function __construct() {
+		$projectUsers = \REDCap::getUsers();
+		$module->allowUsers($projectUsers);
+	}
+	
 	public function checkForMRNs($mrnList) {
 		// check to see if we can make a zip given the user's mrnList, send string message
 		if ($mrnList[0] == "" or $mrnList[0] == null) $mrnList = [];
