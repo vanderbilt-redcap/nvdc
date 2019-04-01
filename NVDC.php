@@ -84,23 +84,23 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			}
 		}
 		
-		if (empty($mrnDict)) return json_encode(["message" => "The NVDC module couldn't find any matching MRNs in the project records."]);
-		
 		// query redcap_edocs_metadata to get file names/paths to add to zip
 		$sql = "SELECT doc_id, stored_name, doc_name FROM redcap_edocs_metadata WHERE project_id=$pid and doc_id in (" . implode(", ", $edocIDs) . ")";
 		$query = db_query($sql);
 		$edocs = [];
 		while($row = db_fetch_assoc($query)) {
-			$edocs[] = [
-				"filepath" => EDOC_PATH . $row['stored_name'],
-				"filename" => $row['doc_name'],
-				"mrn" => $mrnDict[$row['doc_id']]
-			];
+			if ($mrnDict[$row['doc_id']] != "") {		// must have mrn
+				$edocs[] = [
+					"filepath" => EDOC_PATH . $row['stored_name'],
+					"filename" => $row['doc_name'],
+					"mrn" => $mrnDict[$row['doc_id']]
+				];
+			}
 		}
 		
-		// if empty zip, say no files found
+		// send message to client-side
 		if (empty($edocs)) {
-			return json_encode(["message" => "The NVDC module found matching MRNs in the project, but none that had attached Alarm, Trends, or Logbook files."]);
+			return json_encode(["message" => "The NVDC module couldn't find any attached files for the MRNs provided."]);
 		} else {
 			return json_encode([
 				"message" => "Attached files found. Please wait while your download is being prepared.",
@@ -122,7 +122,10 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		// create zip file, open it
 		ini_set('memory_limit', '3G');
 		set_time_limit(1000*60*15);
-		$zipFilePath = $this->getZipPath();
+		$sidHash8 = substr(hash('md5', session_id()), 0, 8);
+		$zipName = "NVDC_Files_$sidHash8.zip";
+		// $zipFilePath = $this->getModulePath() . "/userZips/$zipName";
+		$zipFilePath = EDOC_PATH . $zipName;
 		if (file_exists($zipFilePath)) unlink($zipFilePath);
 		$zip = new \ZipArchive();
 		$zip->open($zipFilePath, \ZipArchive::CREATE);
@@ -412,13 +415,6 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		
 		$html = str_replace("{BODY}", $body, $html);
 		return $html;
-	}
-	
-	private function getZipPath() {
-		$sidHash8 = substr(hash('md5', session_id()), 0, 8);
-		$zipName = "NVDC_Files_$sidHash8.zip";
-		$zipFilePath = $this->getModulePath() . "/userZips/$zipName";
-		return $zipFilePath;
 	}
 	
 	public function removeAttachedFiles() {

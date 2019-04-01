@@ -15,7 +15,7 @@ NVDC.sendMRNs = function() {
 			$("button").prop('disabled', true);
 		},
 		complete: function(response) {
-			console.log(response);
+			// console.log(response);
 			data = JSON.parse(response.responseText);
 			if (typeof data.message !== "undefined") {
 				if (typeof data.edocs !== "undefined") {
@@ -42,7 +42,7 @@ NVDC.requestZip = function(edocs) {
 		dataType: 'json',
 		timeout: (1000 * 60 * 15),	// 15 minute timeout
 		complete: function(response) {
-			console.log(response);
+			// console.log(response);
 			data = JSON.parse(response.responseText);
 			if (data.done == true) {
 				$("#loader").fadeOut(200, function() {
