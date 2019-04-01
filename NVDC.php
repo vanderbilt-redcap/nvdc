@@ -51,12 +51,6 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		}
 	}
 	
-	public function __construct() {
-		parent::__construct();
-		$projectUsers = \REDCap::getUsers();
-		\REDCap::allowUsers($projectUsers);
-	}
-	
 	public function checkForMRNs($mrnList) {
 		// check to see if we can make a zip given the user's mrnList, send string message
 		if ($mrnList[0] == "" or $mrnList[0] == null) $mrnList = [];
@@ -487,4 +481,12 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		echo $conn->connect_errno;
 		echo ("</pre>");
 	}
+}
+function redcap_module_link_check_display($project_id, $link) {
+	$projectUsers = \REDCap::getUsers();
+	$user = \ExternalModules::getUsername();
+	if (in_array($user, $projectUsers)) {
+		return $link;
+	}
+	return null;
 }
