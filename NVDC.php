@@ -67,6 +67,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		$pid = $this->getProjectId();
 		$project = new \Project($pid);
 		$filterLogic = "(isnumber([alarm_file]) or isnumber([log_file]) or isnumber([trends_file]))";
+		echo "<pre>";
+		print_r($_POST);
+		echo "</pre>";
 		if ($_POST['startRecord'] && is_numeric($_POST['startRecord'])) {
 		    echo
 		    $filterLogic .= " AND [".$project->table_pk." >= ".$_POST['startRecord'];
@@ -75,7 +78,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		    $filterLogic .= " AND [".$project->table_pk."] <= ".$_POST['endRecord'];
         }
 		$edocInfo = \REDCap::getData($pid, 'array', NULL, array('mrn', 'alarm_file', 'log_file', 'trends_file'), NULL, NULL, NULL, NULL, NULL, $filterLogic);
-		
+		echo "Filter logic: $filterLogic<br/>";
 		// get array of ids to help us build sql string query
 		$edocIDs = [];
 		$mrnDict = [];
@@ -146,9 +149,6 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		if (file_exists($zipFilePath)) unlink($zipFilePath);
 		$zip = new \ZipArchive();
 		$zip->open($zipFilePath, \ZipArchive::CREATE);
-		echo "<pre>";
-		print_r($edocs);
-		echo "</pre>";
 		foreach ($edocs as $edoc) {
 			$zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edocs['record'] . ' ' . $edoc['filename']);
 		}
