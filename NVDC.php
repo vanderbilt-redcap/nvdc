@@ -67,6 +67,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		$pid = $this->getProjectId();
 		$project = new \Project($pid);
 		$filterLogic = "(isnumber([alarm_file]) or isnumber([log_file]) or isnumber([trends_file]))";
+		echo "Post Data: ";
 		echo "<pre>";
 		print_r($_POST);
 		echo "</pre>";
