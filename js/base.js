@@ -44,7 +44,7 @@ NVDC.requestZip = function(edocs) {
 		dataType: 'json',
 		timeout: (1000 * 60 * 15),	// 15 minute timeout
 		complete: function(response) {
-			// console.log(response);
+			 console.log(response);
 			data = JSON.parse(response.responseText);
 			if (data.done == true) {
 				$("#loader").fadeOut(200, function() {
