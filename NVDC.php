@@ -314,15 +314,15 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			</div>
 			<form>
 				<div class='form-group'>
-				    <div style='display:table-row'>
-                        <label for='mrnList'>MRN(s)</label>
-                        <input type='text' class='form-control mb-2' name='mrnList' aria-describedby='mrnHelp' placeholder='012345678, 123456789'>
-					</div>
-				    <div style='width:50%;display:table-cell margin:0 15px 0 15px'>
+					<label for='mrnList'>MRN(s)</label>
+					<input type='text' class='form-control mb-2' name='mrnList' aria-describedby='mrnHelp' placeholder='012345678, 123456789'>
+				</div>
+				<div class='form-group' style='display:table;'>
+				    <div style='display:table-cell; margin:0 10px; 0 10px;'>
                         <label for='startRecord'>Start Export on Record</label>
                         <input type='text' class='form-control mb-2' name='startRecord'>
 					</div>
-					<div style='width:50%;display:table-cell margin:0 15px 0 15px'>
+					<div style='display:table-cell; margin:0 10px; 0 10px;'>
                         <label for='endRecord'>End Export on Record</label>
                         <input type='text' class='form-control mb-2' name='endRecord'>
 					</div>

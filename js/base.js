@@ -5,11 +5,13 @@ $(function() {
 var NVDC = {};
 NVDC.sendMRNs = function() {
 	let mrns = $("[name=mrnList]").val().replace(/[^,\d]*/g, '').split(',');
+	let startRecord = $('[name=startRecord]').val();
+	let endRecord = $('[name=endRecord]').val();
 	if (mrns.length <= 0) return;
 	$("#noteHolder").empty()
 	let jqxhr = $.post({
 		url: window.location.href,
-		data: {"mrnList": mrns},
+		data: {"mrnList": mrns, "startRecord": startRecord, "endRecord": endRecord},
 		dataType: 'json',
 		beforeSend: function (request, settings) {
 			$("button").prop('disabled', true);
