@@ -65,7 +65,14 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		// check to see if we can make a zip given the user's mrnList, send string message
 		if ($mrnList[0] == "" or $mrnList[0] == null) $mrnList = [];
 		$pid = $this->getProjectId();
-		$filterLogic = "isnumber([alarm_file]) or isnumber([log_file]) or isnumber([trends_file])";
+		$project = new \Project($pid);
+		$filterLogic = "(isnumber([alarm_file]) or isnumber([log_file]) or isnumber([trends_file]))";
+		if ($_POST['startRecord'] && is_numeric($_POST['startRecord'])) {
+		    $filterLogic .= " AND [".$project->table_pk." >= ".$_POST['startRecord'];
+        }
+		if ($_POST['endRecord'] && is_numeric($_POST['endRecord'])) {
+		    $filterLogic .= " AND [".$project->table_pk."] <= ".$_POST['endRecord'];
+        }
 		$edocInfo = \REDCap::getData($pid, 'array', NULL, array('mrn', 'alarm_file', 'log_file', 'trends_file'), NULL, NULL, NULL, NULL, NULL, $filterLogic);
 		
 		// get array of ids to help us build sql string query
@@ -76,15 +83,18 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			if (empty($mrnList) or in_array((string) $arr['mrn'], $mrnList)) {
 				if ($arr['alarm_file']) {
 					$edocIDs[] = $arr['alarm_file'];
-					$mrnDict[$arr['alarm_file']] = $arr['mrn'];
+					$mrnDict[$arr['alarm_file']]['mrn'] = $arr['mrn'];
+                    $mrnDict[$arr['alarm_file']]['record'] = $recordId;
 				}
 				if ($arr['log_file']) {
 					$edocIDs[] = $arr['log_file'];
-					$mrnDict[$arr['log_file']] = $arr['mrn'];
+					$mrnDict[$arr['log_file']]['mrn'] = $arr['mrn'];
+                    $mrnDict[$arr['log_file']]['record'] = $recordId;
 				}
 				if ($arr['trends_file']) {
 					$edocIDs[] = $arr['trends_file'];
-					$mrnDict[$arr['trends_file']] = $arr['mrn'];
+					$mrnDict[$arr['trends_file']]['mrn'] = $arr['mrn'];
+                    $mrnDict[$arr['trends_file']]['record'] = $recordId;
 				}
 			}
 		}
@@ -94,11 +104,12 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		$query = db_query($sql);
 		$edocs = [];
 		while($row = db_fetch_assoc($query)) {
-			if ($mrnDict[$row['doc_id']] != "") {		// must have mrn
+			if ($mrnDict[$row['doc_id']]['mrn'] != "" && $mrnDict[$row['doc_id']]['record']) {		// must have mrn
 				$edocs[] = [
 					"filepath" => EDOC_PATH . $row['stored_name'],
 					"filename" => $row['doc_name'],
-					"mrn" => $mrnDict[$row['doc_id']]
+					"mrn" => $mrnDict[$row['doc_id']]['mrn'],
+                    "record" => $mrnDict[$row['doc_id']]['record']
 				];
 			}
 		}
@@ -135,7 +146,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		$zip = new \ZipArchive();
 		$zip->open($zipFilePath, \ZipArchive::CREATE);
 		foreach ($edocs as $edoc) {
-			$zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edoc['filename']);
+			$zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edocs['record'] . ' ' . $edoc['filename']);
 		}
 		$zip->close();
 	}
@@ -300,6 +311,16 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 				<div class='form-group'>
 					<label for='mrnList'>MRN(s)</label>
 					<input type='text' class='form-control mb-2' name='mrnList' aria-describedby='mrnHelp' placeholder='012345678, 123456789'>
+				</div>
+				<div class='form-group' style='display:table;'>
+				    <div style='width:50%;display:table-cell'>
+                        <label for='startRecord'>Start Export on Record</label>
+                        <input type='text' class='form-control mb-2' name='startRecord'>
+					</div>
+					<div style='width:50%;display:table-cell'>
+                        <label for='endRecord'>End Export on Record</label>
+                        <input type='text' class='form-control mb-2' name='endRecord'>
+					</div>
 				</div>
 				<div>
 					<button type='button' class='btn btn-primary' onclick='NVDC.sendMRNs()'>Submit</button>
