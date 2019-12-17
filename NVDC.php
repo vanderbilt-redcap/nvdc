@@ -68,6 +68,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		$project = new \Project($pid);
 		$filterLogic = "(isnumber([alarm_file]) or isnumber([log_file]) or isnumber([trends_file]))";
 		if ($_POST['startRecord'] && is_numeric($_POST['startRecord'])) {
+		    echo
 		    $filterLogic .= " AND [".$project->table_pk." >= ".$_POST['startRecord'];
         }
 		if ($_POST['endRecord'] && is_numeric($_POST['endRecord'])) {
@@ -145,6 +146,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		if (file_exists($zipFilePath)) unlink($zipFilePath);
 		$zip = new \ZipArchive();
 		$zip->open($zipFilePath, \ZipArchive::CREATE);
+		echo "<pre>";
+		print_r($edocs);
+		echo "</pre>";
 		foreach ($edocs as $edoc) {
 			$zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edocs['record'] . ' ' . $edoc['filename']);
 		}

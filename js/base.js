@@ -36,14 +36,13 @@ NVDC.sendMRNs = function() {
 	});
 }
 NVDC.requestZip = function(edocs) {
-	console.log(edocs);
 	let jqxhr = $.post({
 		url: window.location.href,
 		data: {"makeZip": true, "edocs": JSON.stringify(edocs)},
 		dataType: 'json',
 		timeout: (1000 * 60 * 15),	// 15 minute timeout
 		complete: function(response) {
-			// console.log(response);
+			 console.log(response);
 			data = JSON.parse(response.responseText);
 			if (data.done == true) {
 				$("#loader").fadeOut(200, function() {
