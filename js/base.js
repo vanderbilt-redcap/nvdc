@@ -36,6 +36,7 @@ NVDC.sendMRNs = function() {
 	});
 }
 NVDC.requestZip = function(edocs) {
+	console.log(edocs);
 	let jqxhr = $.post({
 		url: window.location.href,
 		data: {"makeZip": true, "edocs": JSON.stringify(edocs)},
