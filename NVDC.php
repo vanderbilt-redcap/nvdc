@@ -145,11 +145,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		if (file_exists($zipFilePath)) unlink($zipFilePath);
 		$zip = new \ZipArchive();
 		$zip->open($zipFilePath, \ZipArchive::CREATE);
-		echo "<pre>";
-		print_r($edocs);
-		echo "</pre>";
+
 		foreach ($edocs as $edoc) {
-			$zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edocs['record'] . ' ' . $edoc['filename']);
+			$zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edoc['record'] . ' ' . $edoc['filename']);
 		}
 		$zip->close();
 	}
