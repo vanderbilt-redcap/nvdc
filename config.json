@@ -3,6 +3,7 @@
   "namespace": "Vanderbilt\\NVDC",
   "description": "This module adds helpful file handling bookmarks to a NICU Ventilator Data project.",
   "documentation": "README.md",
+  "framework-version": 2,
   "authors": [
     {
       "name": "Carl Reed",
@@ -25,6 +26,11 @@
         "name": "Attach Ventilator Data Files",
         "icon": "attach",
         "url": "attachVentilatorFiles.php"
+      },
+      {
+        "name": "Download Full Zip",
+        "icon": "attach",
+        "url": "getFullZip.php"
       }
     ],
     "control-center": []
@@ -32,11 +38,19 @@
   "no-auth-pages": [],
   "project-settings": [],
   "system-settings": [],
-  "crons": [],
+  "crons": [
+    {
+      "cron_name": "cron",
+      "cron_description": "Cron to Generate Full Zip File",
+      "method": "cron",
+      "cron_hour": 1,
+      "cron_max_run_time": "600"
+    }
+  ],
   "compatibility": {
-    "php-version-min": "",
+    "php-version-min": "5.4.0",
     "php-version-max": "",
-    "redcap-version-min": "",
+    "redcap-version-min": "8.11.6",
     "redcap-version-max": ""
   }
 }

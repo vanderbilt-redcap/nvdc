@@ -2,6 +2,9 @@
 namespace Vanderbilt\NVDC;
 
 class NVDC extends \ExternalModules\AbstractExternalModule {
+    //const ORI_PATH = "/ori/redcap_plugins/nvdc/";
+    const ORI_PATH = "C:/xampp/htdocs/redcap/modules/nvdc_v1.1/";
+
 	function redcap_data_entry_form($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
 		# Purpose of this hook: When a user enters a vent_ecn, we try to get the associated vent_sn and put it in place
 		# We can get the ECN-SN pairs from a file in the file repository that has comment "ECN-SN pairs"
@@ -142,16 +145,20 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		$zipName = "NVDC_Files_$sidHash8.zip";
 		// $zipFilePath = $this->getModulePath() . "/userZips/$zipName";
 		$zipFilePath = EDOC_PATH . $zipName;
-		if (file_exists($zipFilePath)) unlink($zipFilePath);
-		$zip = new \ZipArchive();
-		$zip->open($zipFilePath, \ZipArchive::CREATE);
-
-		foreach ($edocs as $edoc) {
-			$zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edoc['record'] . ' ' . $edoc['filename']);
-		}
-		$zip->close();
+		self::createZipFile($zipFilePath,$edocs);
 	}
-	
+
+	public function createZipFile($zipFilePath,$edocs) {
+        if (file_exists($zipFilePath)) unlink($zipFilePath);
+        $zip = new \ZipArchive();
+        $zip->open($zipFilePath, \ZipArchive::CREATE);
+
+        foreach ($edocs as $edoc) {
+            $zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edoc['record'] . ' ' . $edoc['filename']);
+        }
+        $zip->close();
+    }
+
 	public function printMakeZipReport($message) {
 		$html = file_get_contents($this->getUrl("html" . DIRECTORY_SEPARATOR . "base.html"));
 		$html = str_replace("STYLESHEET_FILEPATH", $this->getUrl("css" . DIRECTORY_SEPARATOR . "attachStyles.css"), $html);
