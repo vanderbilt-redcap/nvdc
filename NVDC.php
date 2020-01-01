@@ -76,6 +76,10 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 
             $zipPath = $this::ORI_PATH;
 
+            if (!is_dir($zipPath)) {
+                mkdir($zipPath,0755,true);
+            }
+
             $this->createZipFile($zipPath . "NVDC_All_Files_" . $project_id.".zip", $edocs);
         }
         unset($_GET['pid']);
