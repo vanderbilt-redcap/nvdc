@@ -63,7 +63,24 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		// }
 		// return null;
 	}
-	
+
+	public function cron() {
+        $projectList = $this->framework->getProjectsWithModuleEnabled();
+
+        foreach ($projectList as $project_id) {
+            $_GET['pid'] = $project_id;
+
+            $mrnList = json_decode($this->checkForMRNs(), true);
+
+            $edocs = $mrnList["edocs"];
+
+            $zipPath = $this::ORI_PATH;
+
+            $this->createZipFile($zipPath . "NVDC_All_Files_" . $project_id.".zip", $edocs);
+        }
+        unset($_GET['pid']);
+    }
+
 	public function checkForMRNs($mrnList) {
 		// check to see if we can make a zip given the user's mrnList, send string message
 		if ($mrnList[0] == "" or $mrnList[0] == null) $mrnList = [];
