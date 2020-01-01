@@ -43,8 +43,9 @@
       "cron_name": "cron",
       "cron_description": "Cron to Generate Full Zip File",
       "method": "cron",
-      "cron_hour": 1,
-      "cron_max_run_time": "600"
+      "cron_hour": 13,
+      "cron_minute": 15,
+      "cron_max_run_time": 600
     }
   ],
   "compatibility": {
