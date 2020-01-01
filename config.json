@@ -44,7 +44,7 @@
       "cron_description": "Cron to Generate Full Zip File",
       "method": "cron",
       "cron_hour": 14,
-      "cron_minute": 30
+      "cron_minute": 42
     }
   ],
   "compatibility": {

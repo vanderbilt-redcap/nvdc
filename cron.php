@@ -18,11 +18,8 @@ chmod($zipPath,0755);*/
 }
 unset($_GET['pid']);
 
-delete_files($zipPath);
+/*delete_files($zipPath);
 
-/*
- * php delete function that deals with directories recursively
- */
 function delete_files($target) {
     if(is_dir($target)){
         $files = glob( $target . '*', GLOB_MARK ); //GLOB_MARK adds a slash to directories returned
@@ -35,4 +32,4 @@ function delete_files($target) {
     } elseif(is_file($target)) {
         unlink( $target );
     }
-}
+}*/
