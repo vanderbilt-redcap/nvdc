@@ -178,6 +178,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
             $zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edoc['record'] . ' ' . $edoc['filename']);
         }
         $zip->close();
+        chmod($zipFilePath,0755);
     }
 
 	public function printMakeZipReport($message) {

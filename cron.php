@@ -10,7 +10,7 @@ foreach ($projectList as $project_id) {
     $edocs = $mrnList["edocs"];
 
     $zipPath = $module::ORI_PATH;
-rmdir($zipPath);
+
 /*if (!is_dir($zipPath)) {
     mkdir($zipPath,0755,true);
 }
