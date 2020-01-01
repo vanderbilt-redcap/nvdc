@@ -2,8 +2,8 @@
 namespace Vanderbilt\NVDC;
 
 class NVDC extends \ExternalModules\AbstractExternalModule {
-    //const ORI_PATH = "/ori/redcap_plugins/nvdc/";
-    const ORI_PATH = "C:/xampp/htdocs/redcap/modules/nvdc_v1.1/";
+    const ORI_PATH = "/ori/redcap_plugins/nvdc/";
+    //const ORI_PATH = "C:/xampp/htdocs/redcap/modules/nvdc_v1.1/";
 
 	function redcap_data_entry_form($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
 		# Purpose of this hook: When a user enters a vent_ecn, we try to get the associated vent_sn and put it in place
