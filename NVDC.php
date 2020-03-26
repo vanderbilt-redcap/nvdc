@@ -85,7 +85,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
         unset($_GET['pid']);
     }
 
-	public function checkForMRNs($mrnList) {
+	public function checkForMRNs($mrnList = []) {
 		// check to see if we can make a zip given the user's mrnList, send string message
 		if ($mrnList[0] == "" or $mrnList[0] == null) $mrnList = [];
 		$pid = $this->getProjectId();
