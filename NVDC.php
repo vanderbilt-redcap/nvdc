@@ -174,11 +174,19 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	}
 
 	public function createZipFile($zipFilePath,$edocs) {
-        if (file_exists($zipFilePath)) unlink($zipFilePath);
+        if (file_exists($zipFilePath)) {
+			$res = unlink($zipFilePath);
+			if ($res !== true) {
+				return "Failed to delete existing .zip archive.";
+			}
+		}
+		
         $zip = new \ZipArchive();
         
 		$res = $zip->open($zipFilePath, \ZipArchive::CREATE);
 		switch ($res) {
+			case true:
+				continue;
 			case \ZipArchive::ER_EXISTS:
 				return "File already exists.";
 			case \ZipArchive::ER_INCONS:
