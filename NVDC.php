@@ -255,7 +255,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			}
 		}
 		
-        chmod($zipFilePath,0755);
+        chmod($zipFilePath,0775);
 		return $success;
     }
 

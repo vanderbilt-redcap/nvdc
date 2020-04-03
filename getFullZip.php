@@ -5,14 +5,6 @@ $report_string = "";
 $zipName = "NVDC_All_Files_".$module->getProjectId().".zip";
 $zipFilePath = $module::ORI_PATH . $zipName;
 
-// testing
-$zip = new \ZipArchive();
-echo("zip open result: " . print_r($zip->open($zipFilePath, \ZipArchive::CREATE), true) . "<br>");
-echo("zip addFromString result: " . print_r($zip->addFromString("myfile.txt", "this is my text file contents"), true) . "<br>");
-echo("zip close result: " . print_r($zip->close(), true) . "<br>");
-exit();
-
-
 if (file_exists($zipFilePath)) {
 // if (false) {
 	header('Content-Type: application/zip');
