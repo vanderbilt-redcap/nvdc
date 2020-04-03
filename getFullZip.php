@@ -18,7 +18,7 @@ if (file_exists($zipFilePath)) {
 	$edocs = $mrnList["edocs"];
 	
 	$edoc_count = count($edocs);
-	
+	echo ("Found $edoc_count external documents to archive.<br>");
 	if ($edoc_count > 0 ) {
 		if (file_exists($zipFilePath)) {
 			header('Content-Type: application/zip');
