@@ -228,7 +228,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			}
 			
 			// foreach ($edocs as $edoc) {
-			$batch_boundary = $files_added + 5000;
+			$batch_boundary = $files_added + 999;
 			for ($i = $files_added; $i < $batch_boundary; $i++) {
 				$edoc = $edocs[$i];
 				if (empty($edoc))
