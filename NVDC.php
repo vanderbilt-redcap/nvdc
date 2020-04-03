@@ -3,7 +3,7 @@ namespace Vanderbilt\NVDC;
 
 class NVDC extends \ExternalModules\AbstractExternalModule {
     const ORI_PATH = "/ori/redcap_plugins/nvdc/";
-    //const ORI_PATH = "C:/xampp/htdocs/redcap/modules/nvdc_v1.1/";
+    // const ORI_PATH = "C:/xampp/htdocs/redcap/modules/nvdc_v1.1/";
 
 	function redcap_data_entry_form($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
 		# Purpose of this hook: When a user enters a vent_ecn, we try to get the associated vent_sn and put it in place
@@ -64,9 +64,10 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		// return null;
 	}
 
-	public function cron() {
-        $projectList = $this->framework->getProjectsWithModuleEnabled();
-
+	public function cron($projectList = null) {
+        if (empty($projectList))
+			$projectList = $this->framework->getProjectsWithModuleEnabled();
+		
         foreach ($projectList as $project_id) {
             $_GET['pid'] = $project_id;
 
@@ -79,10 +80,12 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
             if (!is_dir($zipPath)) {
                 mkdir($zipPath,0755,true);
             }
-
+			
+			echo ("creating zip file for project: $project_id" . "<br>");
             $this->createZipFile($zipPath . "NVDC_All_Files_" . $project_id.".zip", $edocs);
         }
         unset($_GET['pid']);
+		
     }
 
 	public function checkForMRNs($mrnList = []) {
@@ -173,7 +176,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
         if (file_exists($zipFilePath)) unlink($zipFilePath);
         $zip = new \ZipArchive();
         $zip->open($zipFilePath, \ZipArchive::CREATE);
-
+		
         foreach ($edocs as $edoc) {
             $zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edoc['record'] . ' ' . $edoc['filename']);
         }
