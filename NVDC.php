@@ -182,38 +182,45 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		}
 		
         $zip = new \ZipArchive();
-        
-		$res = $zip->open($zipFilePath, \ZipArchive::CREATE);
-		switch ($res) {
-			case true:
-				continue;
-			case \ZipArchive::ER_EXISTS:
-				return "File already exists.";
-			case \ZipArchive::ER_INCONS:
-				return "Zip archive inconsistent.";
-			case \ZipArchive::ER_INVAL:
-				return "Invalid argument.";
-			case \ZipArchive::ER_MEMORY:
-				return "Malloc failure.";
-			case \ZipArchive::ER_NOENT:
-				return "No such file.";
-			case \ZipArchive::ER_NOZIP:
-				return "Not a zip archive.";
-			case \ZipArchive::ER_OPEN:
-				return "Can't open file.";
-			case \ZipArchive::ER_READ:
-				return "Read error.";
-			case \ZipArchive::ER_SEEK:
-				return "Seek error.";
-		}
+		$files_added = 0;
+        $files_to_add = count($edocs);
 		
-        foreach ($edocs as $edoc) {
-            $zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edoc['record'] . ' ' . $edoc['filename']);
-        }
-        $success = $zip->close();
-		
-		if ($success !== true) {
-			return $zip->getStatusString();
+		while ($files_added < ($files_to_add)) {
+			$res = $zip->open($zipFilePath, \ZipArchive::CREATE);
+			switch ($res) {
+				case true:
+					continue;
+				case \ZipArchive::ER_EXISTS:
+					return "File already exists.";
+				case \ZipArchive::ER_INCONS:
+					return "Zip archive inconsistent.";
+				case \ZipArchive::ER_INVAL:
+					return "Invalid argument.";
+				case \ZipArchive::ER_MEMORY:
+					return "Malloc failure.";
+				case \ZipArchive::ER_NOENT:
+					return "No such file.";
+				case \ZipArchive::ER_NOZIP:
+					return "Not a zip archive.";
+				case \ZipArchive::ER_OPEN:
+					return "Can't open file.";
+				case \ZipArchive::ER_READ:
+					return "Read error.";
+				case \ZipArchive::ER_SEEK:
+					return "Seek error.";
+			}
+			
+			// foreach ($edocs as $edoc) {
+			for ($i = $files_added; $i < ($files_added + 500); $i++) {
+				$edoc = $edocs[$i];
+				$zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edoc['record'] . ' ' . $edoc['filename']);
+				$files_added++;
+			}
+			
+			$success = $zip->close();
+			if ($success !== true) {
+				return $zip->getStatusString();
+			}
 		}
 		
         chmod($zipFilePath,0755);
