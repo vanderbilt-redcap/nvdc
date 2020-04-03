@@ -177,7 +177,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
         if (file_exists($zipFilePath)) unlink($zipFilePath);
         $zip = new \ZipArchive();
         
-		$res = $zip->open($zipFilePath, ZipArchive::CREATE); 
+		$res = $zip->open($zipFilePath, \ZipArchive::CREATE); 
 		if ($res !== true) {
 			return $res;
 		}
