@@ -11,7 +11,7 @@ if (file_exists($zipFilePath)) {
 	echo ("The REDCap NVDC module didn't find zipped files. Attempting to generate .zip archive now.<br>");
 	
 	$current_pid = $_GET['pid'];
-	$module->cron([$current_pid]);
+	$archives_created = $module->cron([$current_pid]);
 	
 	$_GET['pid'] = $current_pid;
 	$mrnList = json_decode($module->checkForMRNs(), true);
@@ -27,11 +27,14 @@ if (file_exists($zipFilePath)) {
 			header('Content-length: ' . filesize($zipFilePath));
 			readfile($zipFilePath);
 		} else {
-			echo("An error has occured -- there are $edoc_count files to retrieve, but there was an issue finding the .zip archive.");
+			if ($archives_created[$current_pid] !== true) {
+				echo("The NVDC module failed to create the necessary .zip archive: " . $archives_created[$current_pid]) . "<br>";
+			} else {
+				echo("An error has occured -- the NVDC module successfully created the .zip archive, but it's not in the location expected.");
+			}
 		}
 	} else {
 		echo("There are 0 external documents associated with this project -- therefore, there is no .zip archive to download.<br>");
 		echo("You will be able to download a .zip after attaching ventilator files.");
 	}
-
 }

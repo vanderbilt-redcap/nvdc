@@ -68,6 +68,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
         if (empty($projectList))
 			$projectList = $this->framework->getProjectsWithModuleEnabled();
 		
+		$archives_created = [];
         foreach ($projectList as $project_id) {
             $_GET['pid'] = $project_id;
 
@@ -82,10 +83,10 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
             }
 			
 			echo ("creating zip file for project: $project_id" . "<br>");
-            $this->createZipFile($zipPath . "NVDC_All_Files_" . $project_id.".zip", $edocs);
+            $archives_created[$project_id] = $this->createZipFile($zipPath . "NVDC_All_Files_" . $project_id.".zip", $edocs);
         }
         unset($_GET['pid']);
-		
+		return $archives_created;
     }
 
 	public function checkForMRNs($mrnList = []) {
@@ -180,8 +181,14 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
         foreach ($edocs as $edoc) {
             $zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edoc['record'] . ' ' . $edoc['filename']);
         }
-        $zip->close();
+        $success = $zip->close();
+		
+		if ($success !== true) {
+			return $zip->getStatusString();
+		}
+		
         chmod($zipFilePath,0755);
+		return $success;
     }
 
 	public function printMakeZipReport($message) {
