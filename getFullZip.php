@@ -1,14 +1,18 @@
 <?php
+
+$report_string = "";
+
 $zipName = "NVDC_All_Files_".$module->getProjectId().".zip";
 $zipFilePath = $module::ORI_PATH . $zipName;
 if (file_exists($zipFilePath)) {
+// if (false) {
 	header('Content-Type: application/zip');
 	header('Content-Description: File Transfer');
 	header('Content-Disposition: attachment; filename="' . $zipName . '"');
 	header('Content-length: ' . filesize($zipFilePath));
 	readfile($zipFilePath);
 } else {
-	echo ("The REDCap NVDC module didn't find zipped files. Attempting to generate .zip archive now.<br>");
+	$report_string .= "The REDCap NVDC module didn't find the expected .zip archive. Attempting to generate .zip archive now." . "<br>";
 	
 	$current_pid = $_GET['pid'];
 	$archives_created = $module->cron([$current_pid]);
@@ -18,9 +22,11 @@ if (file_exists($zipFilePath)) {
 	$edocs = $mrnList["edocs"];
 	
 	$edoc_count = count($edocs);
-	echo ("Found $edoc_count external documents to archive.<br>");
+	
+	$report_string .= "Found $edoc_count external documents to archive." . "<br>";
 	if ($edoc_count > 0 ) {
 		if (file_exists($zipFilePath)) {
+		// if (false) {
 			header('Content-Type: application/zip');
 			header('Content-Description: File Transfer');
 			header('Content-Disposition: attachment; filename="' . $zipName . '"');
@@ -28,13 +34,15 @@ if (file_exists($zipFilePath)) {
 			readfile($zipFilePath);
 		} else {
 			if ($archives_created[$current_pid] !== true) {
-				echo("The NVDC module failed to create the necessary .zip archive: " . $archives_created[$current_pid]) . "<br>";
+				$report_string .= print_r($archives_created[$current_pid], true) . "<br>";
 			} else {
-				echo("An error has occured -- the NVDC module successfully created the .zip archive, but it's not in the location expected.");
+				$report_string .= "An error has occured -- the NVDC module successfully created the .zip archive, but it's not in the location expected." . "<br>";
 			}
+			exit($report_string);
 		}
 	} else {
-		echo("There are 0 external documents associated with this project -- therefore, there is no .zip archive to download.<br>");
-		echo("You will be able to download a .zip after attaching ventilator files.");
+		$report_string .= "There are 0 external documents associated with this project -- therefore, there is no .zip archive to download." . "<br>";
+		$report_string .= "You will be able to download a .zip after attaching ventilator files." . "<br>";
+		exit($report_string);
 	}
 }

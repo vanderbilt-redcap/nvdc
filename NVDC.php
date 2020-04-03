@@ -82,7 +82,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
                 mkdir($zipPath,0755,true);
             }
 			
-			echo ("creating zip file for project: $project_id" . "<br>");
+			if (!empty($report_string))
+				$report_string .= "Creating .zip file for project: $project_id" . "<br>";
+			
             $archives_created[$project_id] = $this->createZipFile($zipPath . "NVDC_All_Files_" . $project_id.".zip", $edocs);
         }
         unset($_GET['pid']);
@@ -185,41 +187,49 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		$files_added = 0;
         $files_to_add = count($edocs);
 		
-		while ($files_added < ($files_to_add)) {
+		while ($files_added < $files_to_add) {
 			$res = $zip->open($zipFilePath, \ZipArchive::CREATE);
 			switch ($res) {
 				case true:
 					continue;
 				case \ZipArchive::ER_EXISTS:
-					return "File already exists.";
+					return "Failed to open new ZipArchive object. ZipArchive error: File already exists.";
 				case \ZipArchive::ER_INCONS:
-					return "Zip archive inconsistent.";
+					return "Failed to open new ZipArchive object. ZipArchive error: Zip archive inconsistent.";
 				case \ZipArchive::ER_INVAL:
-					return "Invalid argument.";
+					return "Failed to open new ZipArchive object. ZipArchive error: Invalid argument.";
 				case \ZipArchive::ER_MEMORY:
-					return "Malloc failure.";
+					return "Failed to open new ZipArchive object. ZipArchive error: Malloc failure.";
 				case \ZipArchive::ER_NOENT:
-					return "No such file.";
+					return "Failed to open new ZipArchive object. ZipArchive error: No such file.";
 				case \ZipArchive::ER_NOZIP:
-					return "Not a zip archive.";
+					return "Failed to open new ZipArchive object. ZipArchive error: Not a zip archive.";
 				case \ZipArchive::ER_OPEN:
-					return "Can't open file.";
+					return "Failed to open new ZipArchive object. ZipArchive error: Can't open file.";
 				case \ZipArchive::ER_READ:
-					return "Read error.";
+					return "Failed to open new ZipArchive object. ZipArchive error: Read error.";
 				case \ZipArchive::ER_SEEK:
-					return "Seek error.";
+					return "Failed to open new ZipArchive object. ZipArchive error: Seek error.";
 			}
 			
 			// foreach ($edocs as $edoc) {
-			for ($i = $files_added; $i < ($files_added + 500); $i++) {
+			$batch_boundary = $files_added + 5000;
+			for ($i = $files_added; $i < $batch_boundary; $i++) {
 				$edoc = $edocs[$i];
-				$zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edoc['record'] . ' ' . $edoc['filename']);
-				$files_added++;
+				if (empty($edoc))
+					break;
+				
+				$res = $zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edoc['record'] . ' ' . $edoc['filename']);
+				if ($res === true) {
+					$files_added++;
+				} else {
+					return "Failed to add file to .zip archive. ZipArchive status string: " . $zip->getStatusString();
+				}
 			}
 			
 			$success = $zip->close();
 			if ($success !== true) {
-				return $zip->getStatusString();
+				return "Failed to close/save .zip archive. ZipArchive status string: " . $zip->getStatusString();
 			}
 		}
 		
@@ -588,4 +598,10 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		echo $conn->connect_errno;
 		echo ("</pre>");
 	}
+
+	function llog($text) {
+		if (file_exists("C:/vumc/log.txt"))
+			file_put_contents("C:/vumc/log.txt", $text . "\r\n", FILE_APPEND);
+	}
+	
 }
