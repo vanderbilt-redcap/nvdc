@@ -92,6 +92,21 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
     }
 
 	public function checkForMRNs($mrnList = []) {
+		// // # for testing large amounts of files
+		// $edocs = [];
+		// for ($i = 1; $i < 14000; $i++) {
+			// $fname = "a_txt_file_$i.txt";
+			// if ($i == 100)
+				// $fname = "gibjwoeirtjwoe.txt";
+			// $edocs[] = [
+				// "filepath" => "/ori/redcap_plugins/test/$fname",
+				// "filename" => $fname,
+				// "mrn" => 46329804,
+				// "record" => $i
+			// ];
+		// }
+		// return json_encode(["edocs" => $edocs]);
+		
 		// check to see if we can make a zip given the user's mrnList, send string message
 		if ($mrnList[0] == "" or $mrnList[0] == null) $mrnList = [];
 		$pid = $this->getProjectId();
@@ -209,7 +224,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 				case \ZipArchive::ER_READ:
 					return "Failed to open new ZipArchive object. ZipArchive error: Read error.";
 				case \ZipArchive::ER_SEEK:
-					return "Failed to open new ZipArchive object. ZipArchive error: Seek error.";
+					return "Failed to open new ZipArchive object. ZipArchive error: eek error.";
 			}
 			
 			// foreach ($edocs as $edoc) {
@@ -219,12 +234,18 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 				if (empty($edoc))
 					break;
 				
-				$res = $zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edoc['record'] . ' ' . $edoc['filename']);
-				if ($res === true) {
-					$files_added++;
+				if (file_exists($edoc['filepath'])) {
+					$res = $zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edoc['record'] . ' ' . $edoc['filename']);
+					if ($res !== true) {
+						return "Failed to add file to .zip archive. ZipArchive status string: " . $zip->getStatusString();
+					}
 				} else {
-					return "Failed to add file to .zip archive. ZipArchive status string: " . $zip->getStatusString();
+					// missing file!
+					$report_string .= "Tried to add " . $edoc['filename'] . " to .zip archive but file doesn't exist in filesystem!" . "<br>";
 				}
+				
+				// want to increment even if file not exist, to continue iterating
+				$files_added++;
 			}
 			
 			$success = $zip->close();
