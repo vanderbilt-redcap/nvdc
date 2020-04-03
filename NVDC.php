@@ -241,6 +241,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 					}
 				} else {
 					// missing file!
+					\REDCap::logEvent("NVDC Module", "Tried to add " . $edoc['filename'] . " to .zip archive but file doesn't exist in server filesystem.");
 					$report_string .= "Tried to add " . $edoc['filename'] . " to .zip archive but file doesn't exist in filesystem!" . "<br>";
 				}
 				
