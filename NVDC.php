@@ -3,7 +3,7 @@ namespace Vanderbilt\NVDC;
 
 class NVDC extends \ExternalModules\AbstractExternalModule {
     const ORI_PATH = "/ori/redcap_plugins/nvdc/";
-    // const ORI_PATH = "C:/xampp/htdocs/redcap/modules/nvdc_v1.1/";
+    //const ORI_PATH = "C:/xampp/htdocs/redcap/modules/nvdc_v1.1/";
 
 	function redcap_data_entry_form($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
 		# Purpose of this hook: When a user enters a vent_ecn, we try to get the associated vent_sn and put it in place
@@ -64,11 +64,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		// return null;
 	}
 
-	public function cron($projectList = null) {
-        if (empty($projectList))
-			$projectList = $this->framework->getProjectsWithModuleEnabled();
-		
-		$archives_created = [];
+	public function cron() {
+        $projectList = $this->framework->getProjectsWithModuleEnabled();
+
         foreach ($projectList as $project_id) {
             $_GET['pid'] = $project_id;
 
@@ -81,32 +79,13 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
             if (!is_dir($zipPath)) {
                 mkdir($zipPath,0755,true);
             }
-			
-			if (!empty($report_string))
-				$report_string .= "Creating .zip file for project: $project_id" . "<br>";
-			
-            $archives_created[$project_id] = $this->createZipFile($zipPath . "NVDC_All_Files_" . $project_id.".zip", $edocs);
+
+            $this->createZipFile($zipPath . "NVDC_All_Files_" . $project_id.".zip", $edocs);
         }
         unset($_GET['pid']);
-		return $archives_created;
     }
 
 	public function checkForMRNs($mrnList = []) {
-		// // # for testing large amounts of files
-		// $edocs = [];
-		// for ($i = 1; $i < 14000; $i++) {
-			// $fname = "a_txt_file_$i.txt";
-			// if ($i == 100)
-				// $fname = "gibjwoeirtjwoe.txt";
-			// $edocs[] = [
-				// "filepath" => "/ori/redcap_plugins/test/$fname",
-				// "filename" => $fname,
-				// "mrn" => 46329804,
-				// "record" => $i
-			// ];
-		// }
-		// return json_encode(["edocs" => $edocs]);
-		
 		// check to see if we can make a zip given the user's mrnList, send string message
 		if ($mrnList[0] == "" or $mrnList[0] == null) $mrnList = [];
 		$pid = $this->getProjectId();
@@ -191,72 +170,15 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	}
 
 	public function createZipFile($zipFilePath,$edocs) {
-        if (file_exists($zipFilePath)) {
-			$res = unlink($zipFilePath);
-			if ($res !== true) {
-				return "Failed to delete existing .zip archive.";
-			}
-		}
-		
+        if (file_exists($zipFilePath)) unlink($zipFilePath);
         $zip = new \ZipArchive();
-		$files_added = 0;
-        $files_to_add = count($edocs);
-		
-		while ($files_added < $files_to_add) {
-			$res = $zip->open($zipFilePath, \ZipArchive::CREATE);
-			switch ($res) {
-				case true:
-					continue;
-				case \ZipArchive::ER_EXISTS:
-					return "Failed to open new ZipArchive object. ZipArchive error: File already exists.";
-				case \ZipArchive::ER_INCONS:
-					return "Failed to open new ZipArchive object. ZipArchive error: Zip archive inconsistent.";
-				case \ZipArchive::ER_INVAL:
-					return "Failed to open new ZipArchive object. ZipArchive error: Invalid argument.";
-				case \ZipArchive::ER_MEMORY:
-					return "Failed to open new ZipArchive object. ZipArchive error: Malloc failure.";
-				case \ZipArchive::ER_NOENT:
-					return "Failed to open new ZipArchive object. ZipArchive error: No such file.";
-				case \ZipArchive::ER_NOZIP:
-					return "Failed to open new ZipArchive object. ZipArchive error: Not a zip archive.";
-				case \ZipArchive::ER_OPEN:
-					return "Failed to open new ZipArchive object. ZipArchive error: Can't open file.";
-				case \ZipArchive::ER_READ:
-					return "Failed to open new ZipArchive object. ZipArchive error: Read error.";
-				case \ZipArchive::ER_SEEK:
-					return "Failed to open new ZipArchive object. ZipArchive error: eek error.";
-			}
-			
-			// foreach ($edocs as $edoc) {
-			$batch_boundary = $files_added + 999;
-			for ($i = $files_added; $i < $batch_boundary; $i++) {
-				$edoc = $edocs[$i];
-				if (empty($edoc))
-					break;
-				
-				if (file_exists($edoc['filepath'])) {
-					$res = $zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edoc['record'] . ' ' . $edoc['filename']);
-					if ($res !== true) {
-						return "Failed to add file to .zip archive. ZipArchive status string: " . $zip->getStatusString();
-					}
-				} else {
-					// missing file!
-					\REDCap::logEvent("NVDC Module", "Tried to add " . $edoc['filename'] . " to .zip archive but file doesn't exist in server filesystem.");
-					$report_string .= "Tried to add " . $edoc['filename'] . " to .zip archive but file doesn't exist in filesystem!" . "<br>";
-				}
-				
-				// want to increment even if file not exist, to continue iterating
-				$files_added++;
-			}
-			
-			$success = $zip->close();
-			if ($success !== true) {
-				return "Failed to close/save .zip archive. ZipArchive status string: " . $zip->getStatusString();
-			}
-		}
-		
-        chmod($zipFilePath,0775);
-		return $success;
+        $zip->open($zipFilePath, \ZipArchive::CREATE);
+
+        foreach ($edocs as $edoc) {
+            $zip->addFile($edoc['filepath'], $edoc['mrn'] . ' ' . $edoc['record'] . ' ' . $edoc['filename']);
+        }
+        $zip->close();
+        chmod($zipFilePath,0755);
     }
 
 	public function printMakeZipReport($message) {
@@ -620,10 +542,4 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		echo $conn->connect_errno;
 		echo ("</pre>");
 	}
-
-	function llog($text) {
-		if (file_exists("C:/vumc/log.txt"))
-			file_put_contents("C:/vumc/log.txt", $text . "\r\n", FILE_APPEND);
-	}
-	
 }
