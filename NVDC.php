@@ -703,8 +703,8 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	}
 	
 	public function updateZip() {
-		$this->dlog("updating zip archive");
-		
+		$this->dlog("\r\n\r\nupdating zip archive");
+		$this->dlog("datetime: " . date('c'));
 		$zip = $this->getProjectZip();
 		if ($zip === false) {
 			return false;
