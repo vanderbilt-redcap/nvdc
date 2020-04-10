@@ -3,7 +3,7 @@ namespace Vanderbilt\NVDC;
 
 class NVDC extends \ExternalModules\AbstractExternalModule {
     const ORI_PATH = "/ori/redcap_plugins/nvdc/";
-    //const ORI_PATH = "C:/xampp/htdocs/redcap/modules/nvdc_v1.1/";
+	const ZIP_ADD_MAX = 5000;
 
 	function redcap_data_entry_form($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
 		# Purpose of this hook: When a user enters a vent_ecn, we try to get the associated vent_sn and put it in place
@@ -66,21 +66,21 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 
 	public function cron() {
         $projectList = $this->framework->getProjectsWithModuleEnabled();
-
+		
+		$this->nlog();
+		$this->zipFilesAddedTotal = 0;
         foreach ($projectList as $project_id) {
-            $_GET['pid'] = $project_id;
-
-            $mrnList = json_decode($this->checkForMRNs(), true);
-
-            $edocs = $mrnList["edocs"];
-
-            $zipPath = $this::ORI_PATH;
-
-            if (!is_dir($zipPath)) {
-                mkdir($zipPath,0755,true);
-            }
-
-            $this->createZipFile($zipPath . "NVDC_All_Files_" . $project_id.".zip", $edocs);
+			$_GET['pid'] = $project_id;
+			
+			$this->dlog("running cron for project_id: " . $this->getProjectId());
+			$result = $this->updateZip();
+			if ($result === false) {
+				\REDCap::email("carl.w.reed@vumc.org", "carl.w.reed@vumc.org", "NVDC cron failure", "NVDC cron failed:\r\n" . file_get_contents("/ori/redcap_plugins/nvdc/log.txt"));
+			}
+			
+			// if we go over the max amount of files to add per cron run, break loop early
+			if ($this->zipFilesAddedTotal > $this::ZIP_ADD_MAX)
+				break;
         }
         unset($_GET['pid']);
     }
@@ -542,4 +542,196 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		echo $conn->connect_errno;
 		echo ("</pre>");
 	}
+	
+	// create new debug log file
+	private function nlog() {
+		file_put_contents("/ori/redcap_plugins/nvdc/log.txt", "nvdc debug logging:\r\n");
+	}
+	
+	// append to debug log file
+	private function dlog($text) {
+		file_put_contents("/ori/redcap_plugins/nvdc/log.txt", "$text\r\n", FILE_APPEND);
+	}
+	
+	private function getFilepaths() {
+		// get array of edoc information for this project
+		// array of [filename] => filepaths
+		
+		// was cached?
+		if ($this->filepaths_by_pid[$this->getProjectId()])
+			return $this->filepaths_by_pid[$this->getProjectId()];
+		
+		$filepaths = [];
+		$mrnList = json_decode($this->checkForMRNs(), true);
+		$edocs = $mrnList["edocs"];
+		
+		// build array
+		foreach ($edocs as $edoc) {
+			if (file_exists($edoc['filepath'])) {
+				$filepaths[$edoc['filename']] = $edoc['filepath'];
+			}
+		}
+		
+		// cache
+		$this->filepaths_by_pid[$this->getProjectId()] = $filepaths;
+		
+		return $filepaths;
+	}
+	
+	// returns ZipARchive instance
+	private function getProjectZip() {
+		// create path if necessary
+		$zipDir = $this::ORI_PATH;
+		if ($this->isLocalhost()) {
+			$zipDir = "C:" . $zipDir;
+		}
+		if (!is_dir($zipDir)) {
+			$res = mkdir($zipDir,0755,true);
+			if ($res !== true) {
+				$this->dlog("attempt to mkdir zip directory '$zipDir' failed");
+				return false;
+			}
+		}
+		
+		// create zip archive file if necessary
+		$zipPath = $this::ORI_PATH . "NVDC_All_Files_" . $this->getProjectId() . ".zip";
+		if ($this->isLocalhost()) {
+			$zipPath = "C:" . $zipPath;
+		}
+		$this->dlog("\$zipPath: $zipPath");
+		$zip = new \ZipArchive();
+		if (!file_exists($zipPath)) {
+			$res = $zip->open($zipPath, \ZipArchive::CREATE);
+			if ($res !== true) {
+				$this->dlog("attempt to create zip file using zip->open failed. Result: " . var_export($res, true) . " -- zip->getStatusString: " . var_export($zip->getStatusString(), true));	
+				return false;
+			}
+		} else {
+			$res = $zip->open($zipPath);
+			if ($res !== true) {
+				$this->dlog("attempt to open existing zip file using zip->open failed. Result: " . var_export($res, true) . " -- zip->getStatusString: " . var_export($zip->getStatusString(), true));	
+				return false;
+			}
+		}
+		
+		$this->dlog("successfully opened zip archive");
+		return $zip;
+	}
+	
+	private function deleteInvalidFiles($zip) {
+		// remove files from the project's zip archive that are not needed or have been modified
+		// return an array where keys are remaining filenames
+		
+		// get edoc info array of [filename] => 'filepath'
+		$filepaths = $this->getFilepaths();
+		
+		$filesInZip = [];
+		for ($i = 0; $i < $zip->numFiles; $i++) {
+			$zipname = $zip->getNameIndex($i);
+			
+			// $this->dlog($zipname);
+			// $this->dlog($filepaths[$zipname]);
+			
+			// is this zip entry a needed file? if not, remove
+			if (!isset($filepaths[$zipname])) {
+				$this->dlog("'$zipname' is not a needed file, removing from project zip archive file");
+				$res = $zip->deleteIndex($i);
+				if ($res !== true) {
+					$this->dlog("failed to remove zip file entry with name '$zipname' -- aborting updateZip");
+					return false;
+				} else {
+					continue;
+				}
+			}
+			
+			// has this edoc been modified since it was added to archive? if so, remove
+			$entryStats = $zip->statIndex($i);
+			if ($entryStats === false) {
+				$this->dlog("failed to retrieve zip entry stats, aborting zipUpdate");
+				return false;
+			}
+			$zipmodtime = $entryStats['mtime'];
+			$edocmodtime = filemtime($filepaths[$zipname]);
+			if ($zipmodtime === false or $edocmodtime === false) {
+				$this->dlog("zip or edoc modtime non-numeric, aborting zipUpdate");
+				return false;
+			}
+			if ($zipmodtime + 1 < $edocmodtime) {		// when a file is added to zip archive, the modtime will be 1 greater than added file's
+				$this->dlog("ZIP MTIME $zipmodtime < EDOC MTIME $edocmodtime), removing zip entry");
+				$res = $zip->deleteIndex($i);
+				if ($res !== true) {
+					$this->dlog("failed to remove zip file entry with name '$zipname' -- aborting updateZip");
+					return false;
+				} else {
+					continue;
+				}
+			}
+			
+			// file still in zip so don't add again in next phase
+			$filesInZip[$zipname] = true;
+		}
+		
+		return $filesInZip;
+	}
+	
+	private function addMissingFiles($zip, $filesInZip) {
+		// if zip archive is missing any needed project files, add them now
+		
+		// get edoc info array of [filename] => 'filepath'
+		$filepaths = $this->getFilepaths();
+		
+		foreach ($filepaths as $fname => $fpath) {
+			if ($filesInZip[$fname] !== true) {
+				// $this->dlog("fpath: $fpath");
+				// $this->dlog("fname: $fname");
+				$res = $zip->addFile($fpath, $fname);
+				if ($res === true) {
+					$this->zipFilesAddedTotal++;
+					// $this->dlog("added to zip archive: $fpath");
+				} else {
+					$this->dlog("failed to add file '$fname' to zip archive. zip->addFile result: " . var_export($res, true) . " -- zip->getStatusString: " . var_export($zip->getStatusString(), true) . " -- aborting updateZip");
+					return false;
+				}
+			}
+			
+			if ($this->zipFilesAddedTotal >= $this::ZIP_ADD_MAX) {
+				$this->dlog("added the maximum amount of new files for this run, ending early to have time to save zip changes -- will add more next run");
+				return true;
+			}	
+		}
+		return true;
+	}
+	
+	public function updateZip() {
+		$this->dlog("updating zip archive");
+		
+		$zip = $this->getProjectZip();
+		if ($zip === false) {
+			return false;
+		}
+		
+		$filesInZip = $this->deleteInvalidFiles($zip);
+		if ($filesInZip === false) {
+			return false;
+		}
+		
+		$result = $this->addMissingFiles($zip, $filesInZip);
+		if ($result === false) {
+			return false;
+		}
+		
+		// 4. save/close zip archive
+		$result = $zip->close();
+		if ($result === false) {
+			return false;
+		} else {
+			$this->dlog("NVDC::updateZip completed successfully.");
+			return true;
+		}
+	}
+	
+	private function isLocalhost() {
+		if ($_SERVER['HTTP_HOST'] == 'localhost') return true;
+	}
+	
 }
