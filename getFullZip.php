@@ -15,6 +15,6 @@ if ($result === true and $module->zipFilesAddedTotal >= $module::ZIP_ADD_MAX) {
 		readfile($zipFilePath);
 	}
 } else {
-	\REDCap::email("carl.w.reed@vumc.org", "carl.w.reed@vumc.org", "NVDC getFullZip.php failure", "NVDC getFullZip.php failed:\r\n" . file_get_contents("/ori/redcap_plugins/nvdc/log.txt"));
+	\REDCap::email("carl.w.reed@vumc.org", "carl.w.reed@vumc.org", "NVDC getFullZip.php failure", "NVDC getFullZip.php failed");
 	echo("The NVDC module has run into an unexpected error and cannot validate the project's zip archive. REDCap has sent an email to a REDCap DataCore developer notifying them of this issue.");
 }

@@ -2,7 +2,7 @@
 namespace Vanderbilt\NVDC;
 
 class NVDC extends \ExternalModules\AbstractExternalModule {
-    const ORI_PATH = "/ori/redcap_plugins/nvdc/";
+    const ORI_PATH = "/ori2/test/redcap/plugins/";
 	const ZIP_ADD_MAX = 5000;
 
 	function redcap_data_entry_form($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
@@ -67,7 +67,6 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	public function cron() {
         $projectList = $this->framework->getProjectsWithModuleEnabled();
 		
-		$this->nlog();
 		$this->zipFilesAddedTotal = 0;
         foreach ($projectList as $project_id) {
 			$_GET['pid'] = $project_id;
@@ -75,7 +74,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 			$this->dlog("running cron for project_id: " . $this->getProjectId());
 			$result = $this->updateZip();
 			if ($result === false) {
-				\REDCap::email("carl.w.reed@vumc.org", "carl.w.reed@vumc.org", "NVDC cron failure", "NVDC cron failed:\r\n" . file_get_contents("/ori/redcap_plugins/nvdc/log.txt"));
+				\REDCap::email("carl.w.reed@vumc.org", "carl.w.reed@vumc.org", "NVDC cron failure", "NVDC cron failed");
 			}
 			
 			// if we go over the max amount of files to add per cron run, break loop early
@@ -543,14 +542,9 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		echo ("</pre>");
 	}
 	
-	// create new debug log file
-	private function nlog() {
-		file_put_contents("/ori/redcap_plugins/nvdc/log.txt", "nvdc debug logging:\r\n");
-	}
-	
-	// append to debug log file
+	// used to log to file, now use module log table
 	private function dlog($text) {
-		file_put_contents("/ori/redcap_plugins/nvdc/log.txt", "$text\r\n", FILE_APPEND);
+		$this->log($text);
 	}
 	
 	private function getFilepaths() {
