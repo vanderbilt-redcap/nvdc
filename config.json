@@ -37,13 +37,7 @@
   },
   "no-auth-pages": [],
   "project-settings": [],
-  "system-settings": [
-		{
-			"key": "use_test_path",
-			"name": "Use test ORI path?",
-			"type": "checkbox"
-		}
-	],
+  "system-settings": [],
   "crons": [
     {
       "cron_name": "cron",

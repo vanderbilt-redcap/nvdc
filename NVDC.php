@@ -7,11 +7,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	public function __construct() {
 		parent::__construct();
 		
-		if ($this->getSystemSetting("use_test_path")) {
-			$this->ORI_PATH = "/ori2/test/redcap/plugins/";
-		} else {
-			$this->ORI_PATH = "/ori2/redcap_plugins/";
-		}
+		$this->ORI_PATH = "/ori2/redcap_plugins/";
 	}
 	
 	function redcap_data_entry_form($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
