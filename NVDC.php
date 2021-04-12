@@ -2,9 +2,19 @@
 namespace Vanderbilt\NVDC;
 
 class NVDC extends \ExternalModules\AbstractExternalModule {
-    const ORI_PATH = "/ori2/test/redcap/plugins/";
 	const ZIP_ADD_MAX = 5000;
-
+	
+	public function __construct() {
+		parent::__construct();
+		
+		if ($this->getSystemSetting("use_test_path")) {
+			$this->ORI_PATH = "/ori2/test/redcap/plugins/";
+		} else {
+			$this->ORI_PATH = "/ori2/redcap_plugins/";
+		}
+		carl_log("using ori path: " . $this->ORI_PATH);
+	}
+	
 	function redcap_data_entry_form($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
 		# Purpose of this hook: When a user enters a vent_ecn, we try to get the associated vent_sn and put it in place
 		# We can get the ECN-SN pairs from a file in the file repository that has comment "ECN-SN pairs"
@@ -575,7 +585,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 	// returns ZipARchive instance
 	private function getProjectZip() {
 		// create path if necessary
-		$zipDir = $this::ORI_PATH;
+		$zipDir = $this->ORI_PATH;
 		if ($this->isLocalhost()) {
 			$zipDir = "C:" . $zipDir;
 		}
@@ -588,7 +598,7 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		}
 		
 		// create zip archive file if necessary
-		$zipPath = $this::ORI_PATH . "NVDC_All_Files_" . $this->getProjectId() . ".zip";
+		$zipPath = $this->ORI_PATH . "NVDC_All_Files_" . $this->getProjectId() . ".zip";
 		if ($this->isLocalhost()) {
 			$zipPath = "C:" . $zipPath;
 		}

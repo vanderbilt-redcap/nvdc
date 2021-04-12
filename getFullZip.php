@@ -6,7 +6,7 @@ if ($result === true and $module->zipFilesAddedTotal >= $module::ZIP_ADD_MAX) {
 } elseif ($result === false) {
 	$zipName = "NVDC_All_Files_".$module->getProjectId().".zip";
 	// $zipFilePath = $this->getModulePath() . "/userZips/$zipName";
-	$zipFilePath = $module::ORI_PATH . $zipName;
+	$zipFilePath = $module->ORI_PATH . $zipName;
 	if (file_exists($zipFilePath)) {
 		header('Content-Type: application/zip');
 		header('Content-Description: File Transfer');
