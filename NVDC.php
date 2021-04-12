@@ -12,7 +12,6 @@ class NVDC extends \ExternalModules\AbstractExternalModule {
 		} else {
 			$this->ORI_PATH = "/ori2/redcap_plugins/";
 		}
-		carl_log("using ori path: " . $this->ORI_PATH);
 	}
 	
 	function redcap_data_entry_form($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
